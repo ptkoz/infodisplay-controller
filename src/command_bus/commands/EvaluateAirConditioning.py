@@ -5,7 +5,7 @@ from AirConditionerService import AirConditionerService
 from models import SensorMeasure
 from repositories import (
     AirConditionerPingRepository, AirConditionerStatusLogRepository, SensorMeasureRepository,
-    TargetTemperatureRepository,
+    SettingsRepository, TargetTemperatureRepository,
 )
 from .._AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
@@ -21,8 +21,6 @@ class EvaluateAirConditioning(AbstractCommand):
         """
         Executes the command
         """
-        logging.debug("Evaluating air conditioning")
-
         air_conditioner = AirConditionerService(
             AirConditionerPingRepository(context.persistence),
             AirConditionerStatusLogRepository(context.persistence),
@@ -30,11 +28,19 @@ class EvaluateAirConditioning(AbstractCommand):
             context.radio
         )
 
+        if not SettingsRepository(context.persistence).get_settings().ac_management_enabled:
+            # Air conditioning is not enabled, skip evaluation
+            if air_conditioner.is_turned_on() and air_conditioner.can_turn_off():
+                # just disable air conditioner
+                air_conditioner.turn_off()
+            return
+
         if not air_conditioner.is_available():
             # Air conditioner is off the grid, no need to evaluate
             air_conditioner.assume_off_status()
             return
 
+        logging.debug("Evaluating air conditioning")
         measure_repository = SensorMeasureRepository(context.persistence)
         current_measure = measure_repository.get_last_temperature(
             SensorMeasure.LIVING_ROOM,

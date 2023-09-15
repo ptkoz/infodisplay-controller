@@ -9,7 +9,7 @@ from command_bus.commands import EvaluateAirConditioning
 from command_bus.ExecutionContext import ExecutionContext
 from models import (
     AbstractBase, AirConditionerPing, AirConditionerStatus, AirConditionerStatusLog, SensorMeasure,
-    TargetTemperature,
+    Settings, TargetTemperature,
 )
 from radio import Radio
 
@@ -38,6 +38,7 @@ class TestEvaluateAirConditioning(TestCase):
         self.session = Session(engine)
 
         self.session.add(TargetTemperature(1, 2500))
+        self.session.add(Settings(True))
 
         # noinspection PyTypeChecker
         self.context = ExecutionContext(
@@ -190,10 +191,12 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.radio.serial.assert_has_calls([
-            call.write(self.TURN_OFF_BYTES),
-            call.write(self.TURN_OFF_BYTES),
-        ])
+        self.radio.serial.assert_has_calls(
+            [
+                call.write(self.TURN_OFF_BYTES),
+                call.write(self.TURN_OFF_BYTES),
+            ]
+        )
 
         logged_statuses = self.session.query(AirConditionerStatusLog).all()
         self.assertEqual(2, len(logged_statuses))
@@ -210,6 +213,39 @@ class TestEvaluateAirConditioning(TestCase):
                 AirConditionerStatus.TURNED_OFF
             ),
             logged_statuses[1]
+        )
+
+    def test_turn_off_management_disabled(self):
+        """
+        When AC is turned on, but AC management is disabled, we should turn it off even though
+        criteria for turning off are not met yet.
+        """
+        self.session.query(Settings).first().ac_management_enabled = False
+        self.session.add(
+            AirConditionerStatusLog(
+                self.NOW - timedelta(minutes=25),
+                AirConditionerStatus.TURNED_ON
+            )
+        )
+        self.session.add(
+            AirConditionerPing(
+                self.NOW - timedelta(seconds=5)
+            )
+        )
+        self.session.add(
+            SensorMeasure(
+                self.NOW - timedelta(seconds=59),
+                SensorMeasure.LIVING_ROOM,
+                100
+            )
+        )
+
+        self.command.execute(self.context)
+        self.radio.serial.assert_has_calls(
+            [
+                call.write(self.TURN_OFF_BYTES),
+                call.write(self.TURN_OFF_BYTES),
+            ]
         )
 
     def test_no_turn_off_temperature_in_range(self):
@@ -350,6 +386,34 @@ class TestEvaluateAirConditioning(TestCase):
             ),
             logged_statuses[1]
         )
+
+    def test_no_turn_on_when_management_disabled(self):
+        """
+        AC should not be turned on even though all conditions are met, because
+        ac management is disabled.
+        """
+        self.session.query(Settings).first().ac_management_enabled = False
+        self.session.add(
+            AirConditionerStatusLog(
+                self.NOW - timedelta(minutes=25),
+                AirConditionerStatus.TURNED_OFF
+            )
+        )
+        self.session.add(
+            AirConditionerPing(
+                self.NOW - timedelta(minutes=1)
+            )
+        )
+        self.session.add(
+            SensorMeasure(
+                self.NOW - timedelta(minutes=2),
+                SensorMeasure.LIVING_ROOM,
+                100
+            )
+        )
+
+        self.command.execute(self.context)
+        self.radio.serial.write.assert_not_called()
 
     def test_no_turn_on_temperature_in_range(self):
         """

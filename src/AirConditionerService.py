@@ -103,7 +103,7 @@ class AirConditionerService:
         """
         if not self.can_turn_on():
             raise RuntimeError(
-                'Attempting to turn ON the air conditioner while it is not available on in the grace period'
+                'Attempting to turn ON the air conditioner while it is not available or in the grace period'
             )
 
         self.__status_log_repository.set_current_status(
@@ -122,7 +122,7 @@ class AirConditionerService:
         """
         if not self.can_turn_off():
             raise RuntimeError(
-                'Attempting to turn OFF the air conditioner while it is not available on in the grace period'
+                'Attempting to turn OFF the air conditioner while it is not available or in the grace period'
             )
 
         self.__status_log_repository.set_current_status(
