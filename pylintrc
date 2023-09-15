@@ -1,0 +1,4 @@
+[MASTER]
+class-naming-style=PascalCase
+disable=C0103,C0114,R0903,broad-except
+max-line-length = 120
