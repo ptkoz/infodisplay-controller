@@ -19,15 +19,20 @@ class TestEvaluateAirConditioning(TestCase):
     Test case for air conditioning evaluation
     """
     NOW = datetime(2023, 9, 13, 11, 35, 15)
-    TURN_ON_BYTES = b'\x0A\x02\x00\x00\x00\x01\x00\x00'
-    TURN_OFF_BYTES = b'\x0A\x02\x00\x00\x00\x02\x00\x00'
+    TURN_ON_BYTES = b'\xFF\x03\x8A\x02\x01'
+    TURN_OFF_BYTES = b'\xFF\x03\x8A\x02\x02'
 
     def setUp(self) -> None:
         engine = create_engine("sqlite://")
         AbstractBase.metadata.create_all(engine)
         logging.disable(logging.CRITICAL)
 
-        self.mock_radio = Mock()
+        class StubRadio(Radio):
+            # noinspection PyMissingConstructor
+            def __init__(self):
+                self.serial = Mock()
+
+        self.radio = StubRadio()
         self.mock_datetime = Mock()
         self.mock_datetime.now = Mock(return_value=self.NOW)
         self.session = Session(engine)
@@ -39,7 +44,7 @@ class TestEvaluateAirConditioning(TestCase):
             self.session,
             self.mock_datetime,
             Queue(),
-            self.mock_radio
+            self.radio
         )
 
         self.command = EvaluateAirConditioning()
@@ -66,7 +71,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
         self.assertEqual(
             1,
             self.session.query(AirConditionerStatusLog).count(),
@@ -91,7 +96,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
         logged_statuses = self.session.query(AirConditionerStatusLog).all()
         self.assertEqual(2, len(logged_statuses))
@@ -149,7 +154,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
         logged_statuses = self.session.query(AirConditionerStatusLog).all()
         self.assertEqual(1, len(logged_statuses))
@@ -185,11 +190,9 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.assert_has_calls([
-            call.serial.write(self.TURN_OFF_BYTES),
-            call.serial.write(Radio.STOP_SEQUENCE),
-            call.serial.write(self.TURN_OFF_BYTES),
-            call.serial.write(Radio.STOP_SEQUENCE),
+        self.radio.serial.assert_has_calls([
+            call.write(self.TURN_OFF_BYTES),
+            call.write(self.TURN_OFF_BYTES),
         ])
 
         logged_statuses = self.session.query(AirConditionerStatusLog).all()
@@ -233,7 +236,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
     def test_no_turn_off_ac_in_grace_period(self):
         """
@@ -259,7 +262,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
     def test_no_turn_off_already_turned_off(self):
         """
@@ -291,7 +294,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
     def test_turn_on(self):
         """
@@ -324,12 +327,10 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.assert_has_calls(
+        self.radio.serial.assert_has_calls(
             [
-                call.serial.write(self.TURN_ON_BYTES),
-                call.serial.write(Radio.STOP_SEQUENCE),
-                call.serial.write(self.TURN_ON_BYTES),
-                call.serial.write(Radio.STOP_SEQUENCE),
+                call.write(self.TURN_ON_BYTES),
+                call.write(self.TURN_ON_BYTES),
             ]
         )
 
@@ -374,7 +375,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
     def test_no_turn_on_ac_in_grace_period(self):
         """
@@ -400,7 +401,7 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()
 
     def test_no_turn_on_already_turned_on(self):
         """
@@ -432,4 +433,4 @@ class TestEvaluateAirConditioning(TestCase):
         )
 
         self.command.execute(self.context)
-        self.mock_radio.serial.write.assert_not_called()
+        self.radio.serial.write.assert_not_called()

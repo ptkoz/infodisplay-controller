@@ -11,8 +11,6 @@ class Radio:
     as UART device in the system.
     """
 
-    MESSAGE_START_MARKER = b'\xFF'
-
     def __init__(self, serial_device: str, gpio_service_pin: int):
         """
         :param str serial_device: A path to the serial device which represents HC-12 device

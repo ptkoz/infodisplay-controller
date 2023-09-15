@@ -3,7 +3,7 @@ from struct import unpack
 from ApplicationContext import ApplicationContext
 from command_bus.commands import EvaluateAirConditioning, SaveMeasure, SavePing
 from models import AirConditionerPing, SensorMeasure
-from radio import InboundMessage, Radio
+from radio import InboundMessage, MESSAGE_START_MARKER
 
 
 class RadioReceiver:
@@ -23,7 +23,7 @@ class RadioReceiver:
 
         while not self.app.stop_requested:
             radio.serial.timeout = 5
-            if radio.serial.read(1) != Radio.MESSAGE_START_MARKER:
+            if radio.serial.read(1) != MESSAGE_START_MARKER:
                 # skip anything and wait for message beginning
                 continue
 

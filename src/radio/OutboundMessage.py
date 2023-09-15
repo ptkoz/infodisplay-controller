@@ -1,5 +1,5 @@
 from typing import Optional
-from .Radio import Radio
+from .MessageStartMarker import MESSAGE_START_MARKER
 
 
 class OutboundMessage:
@@ -21,20 +21,21 @@ class OutboundMessage:
         if data is not None and len(data) < 120:
             message.extend(data)
 
-        self.encoded_data = bytearray()
-        self.encoded_data.extend(Radio.MESSAGE_START_MARKER)  # every message starts with message start marker
-        self.encoded_data.append(0)  # reserved for message size
+        encoded_data = bytearray()
+        encoded_data.extend(MESSAGE_START_MARKER)  # every message starts with message start marker
+        encoded_data.append(0)  # reserved for message size
 
         for b in message:
             if b & 0x80:
                 # Highest bit is set, let's split this byte across two bytes with only 4 low bits set on each, to ensure
                 # start marker doesn't occur anywhere in the data stream. Then flag first byte with "10" on highest bits
                 # which doesn't collide with start marker, but can inform consumer those need to be joined when reading.
-                self.encoded_data.append((b >> 4) | 0x80)
-                self.encoded_data.append(b & 0x0F)
+                encoded_data.append((b >> 4) | 0x80)
+                encoded_data.append(b & 0x0F)
 
             else:
                 # highest bit is not set, we can leave value unencoded
-                self.encoded_data.append(b)
+                encoded_data.append(b)
 
-        self.encoded_data[1] = len(self.encoded_data) - 2  # minus start marker and the byte for size
+        encoded_data[1] = len(encoded_data) - 2  # minus start marker and the byte for size
+        self.encoded_data = bytes(encoded_data)

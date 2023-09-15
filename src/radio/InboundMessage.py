@@ -27,7 +27,7 @@ class InboundMessage:
             i += 1
 
         self.recipient: int = result[0]
-        self.kind: int = result[0]
+        self.kind: int = result[1]
         self.data: bytes = bytes(result[2:])
         self.length: int = len(self.data)
 

@@ -1,0 +1,1 @@
+MESSAGE_START_MARKER = b'\xFF'
