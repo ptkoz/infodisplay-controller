@@ -4,7 +4,7 @@ from datetime import datetime
 from queue import Empty
 from ApplicationContext import ApplicationContext
 from .ExecutionContext import ExecutionContext
-from ._AbstractCommand import AbstractCommand
+from command_bus.commands import AbstractCommand
 
 
 class CommandExecutor:

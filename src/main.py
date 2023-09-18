@@ -2,8 +2,8 @@ import logging
 import signal
 import threading
 from ApplicationContext import ApplicationContext
-from command_bus import CommandExecutor
-from radio_bus import RadioReceiver
+from command_bus.executor import CommandExecutor
+from radio_bus.receiver import RadioReceiver
 
 app = ApplicationContext()
 
@@ -15,6 +15,7 @@ executor_thread = threading.Thread(target=executor.run)
 
 receiving_thread.start()
 executor_thread.start()
+
 
 # pylint: disable=W0613
 def sig_handler(signum, frame):

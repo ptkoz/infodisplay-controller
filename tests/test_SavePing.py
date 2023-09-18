@@ -4,9 +4,9 @@ from unittest import TestCase
 from unittest.mock import Mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from command_bus.commands import EvaluateAirConditioning, SavePing
-from command_bus.ExecutionContext import ExecutionContext
-from models import AbstractBase, AirConditionerPing
+from command_bus import SavePing
+from command_bus.executor.ExecutionContext import ExecutionContext
+from persistence.models import AbstractBase, AirConditionerPing
 
 
 class TestSavePing(TestCase):

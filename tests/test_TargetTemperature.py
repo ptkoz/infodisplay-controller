@@ -1,6 +1,5 @@
 from unittest import TestCase
-
-from models import TargetTemperature
+from persistence import TargetTemperature
 
 
 class TestTargetTemperature(TestCase):

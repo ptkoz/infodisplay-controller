@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 from typing import Optional
-from repositories import SensorMeasureRepository
-from .._AbstractCommand import AbstractCommand
-from ..ExecutionContext import ExecutionContext
+
+from persistence import SensorMeasureRepository
+from .AbstractCommand import AbstractCommand
+from command_bus.executor.ExecutionContext import ExecutionContext
 
 
 class SaveMeasure(AbstractCommand):

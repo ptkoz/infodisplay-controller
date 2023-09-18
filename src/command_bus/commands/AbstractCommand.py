@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .ExecutionContext import ExecutionContext
+from command_bus.executor.ExecutionContext import ExecutionContext
 
 
 class AbstractCommand(ABC):

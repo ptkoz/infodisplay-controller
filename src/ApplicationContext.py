@@ -3,8 +3,8 @@ import logging
 from queue import Queue
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import AbstractBase
-from radio import Radio
+from persistence import AbstractBase
+from radio_bus.radio import Radio
 
 
 class ApplicationContext:

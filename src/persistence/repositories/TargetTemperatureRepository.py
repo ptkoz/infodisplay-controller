@@ -1,4 +1,4 @@
-from models import TargetTemperature
+from persistence.models import TargetTemperature
 from ._AbstractRepository import AbstractRepository
 
 

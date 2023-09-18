@@ -2,8 +2,7 @@ from datetime import datetime
 from queue import Queue
 from typing import Type
 from sqlalchemy.orm import Session
-
-from radio import Radio
+from radio_bus.radio import Radio
 
 
 class ExecutionContext:

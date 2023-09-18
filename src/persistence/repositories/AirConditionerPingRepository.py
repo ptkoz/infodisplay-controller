@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from models import AirConditionerPing
-from repositories._AbstractRepository import AbstractRepository
+from persistence.models import AirConditionerPing
+from ._AbstractRepository import AbstractRepository
 
 
 class AirConditionerPingRepository(AbstractRepository):

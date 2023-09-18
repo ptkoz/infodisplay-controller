@@ -1,4 +1,4 @@
-from models import Settings
+from persistence.models import Settings
 from ._AbstractRepository import AbstractRepository
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from models import AirConditionerStatusLog, AirConditionerStatus
-from repositories._AbstractRepository import AbstractRepository
+from persistence.models import AirConditionerStatusLog, AirConditionerStatus
+from ._AbstractRepository import AbstractRepository
 
 
 class AirConditionerStatusLogRepository(AbstractRepository):

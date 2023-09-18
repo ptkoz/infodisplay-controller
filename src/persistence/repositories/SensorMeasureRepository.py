@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from models import SensorMeasure
+from persistence.models import SensorMeasure
 from ._AbstractRepository import AbstractRepository
 
 

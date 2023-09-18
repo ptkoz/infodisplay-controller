@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime
 from AirConditionerService import AirConditionerService
-from repositories import AirConditionerPingRepository, AirConditionerStatusLogRepository
+from persistence import AirConditionerPingRepository, AirConditionerStatusLogRepository
 from .EvaluateAirConditioning import EvaluateAirConditioning
-from .._AbstractCommand import AbstractCommand
-from ..ExecutionContext import ExecutionContext
+from .AbstractCommand import AbstractCommand
+from command_bus.executor.ExecutionContext import ExecutionContext
 
 
 class SavePing(AbstractCommand):

@@ -1,14 +1,12 @@
 import logging
 from datetime import timedelta
-
 from AirConditionerService import AirConditionerService
-from models import SensorMeasure
-from repositories import (
-    AirConditionerPingRepository, AirConditionerStatusLogRepository, SensorMeasureRepository,
+from persistence import (
+    AirConditionerPingRepository, AirConditionerStatusLogRepository, SensorMeasure, SensorMeasureRepository,
     SettingsRepository, TargetTemperatureRepository,
 )
-from .._AbstractCommand import AbstractCommand
-from ..ExecutionContext import ExecutionContext
+from .AbstractCommand import AbstractCommand
+from command_bus.executor.ExecutionContext import ExecutionContext
 
 
 class EvaluateAirConditioning(AbstractCommand):

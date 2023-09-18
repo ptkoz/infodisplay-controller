@@ -2,16 +2,16 @@ import logging
 from datetime import datetime, timedelta
 from queue import Queue
 from unittest import TestCase
-from unittest.mock import call, Mock, patch
+from unittest.mock import call, Mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from command_bus.commands import EvaluateAirConditioning
-from command_bus.ExecutionContext import ExecutionContext
-from models import (
+from command_bus import EvaluateAirConditioning
+from command_bus.executor.ExecutionContext import ExecutionContext
+from persistence.models import (
     AbstractBase, AirConditionerPing, AirConditionerStatus, AirConditionerStatusLog, SensorMeasure,
     Settings, TargetTemperature,
 )
-from radio import Radio
+from radio_bus import Radio
 
 
 class TestEvaluateAirConditioning(TestCase):
