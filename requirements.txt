@@ -2,3 +2,4 @@ pyserial
 sqlalchemy
 pylint
 mypy
+websockets
