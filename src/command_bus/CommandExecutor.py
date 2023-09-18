@@ -6,6 +6,7 @@ from threading import Event
 from typing import Type
 from sqlalchemy.orm import Session, sessionmaker
 from radio_bus import Radio
+from ui import Publisher
 from .commands.AbstractCommand import AbstractCommand
 from .ExecutionContext import ExecutionContext
 
@@ -21,12 +22,14 @@ class CommandExecutor:
         db_session_factory: sessionmaker[Session],
         radio: Radio,
         command_bus: Queue,
+        publisher: Publisher,
         time_source: Type[datetime],
         stop: Event
     ):
         self.db_session_factory = db_session_factory
         self.radio = radio
         self.command_bus = command_bus
+        self.publisher = publisher
         self.time_source = time_source
         self.stop = stop
 
@@ -60,5 +63,6 @@ class CommandExecutor:
             self.db_session_factory(),
             self.radio,
             self.command_bus,
+            self.publisher,
             datetime,
         )

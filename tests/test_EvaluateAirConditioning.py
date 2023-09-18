@@ -45,6 +45,7 @@ class TestEvaluateAirConditioning(TestCase):
             self.session,
             self.radio,
             Queue(),
+            Mock(),
             self.mock_datetime,
         )
 

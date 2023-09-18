@@ -30,6 +30,7 @@ class TestSavePing(TestCase):
             self.session,
             Mock(),
             self.mock_queue,
+            Mock(),
             self.mock_datetime,
         )
 
