@@ -6,7 +6,7 @@ from persistence import (
     SettingsRepository, TargetTemperatureRepository,
 )
 from .AbstractCommand import AbstractCommand
-from command_bus.executor.ExecutionContext import ExecutionContext
+from ..ExecutionContext import ExecutionContext
 
 
 class EvaluateAirConditioning(AbstractCommand):
@@ -20,13 +20,13 @@ class EvaluateAirConditioning(AbstractCommand):
         Executes the command
         """
         air_conditioner = AirConditionerService(
-            AirConditionerPingRepository(context.persistence),
-            AirConditionerStatusLogRepository(context.persistence),
+            AirConditionerPingRepository(context.db_session),
+            AirConditionerStatusLogRepository(context.db_session),
             context.time_source,
             context.radio
         )
 
-        if not SettingsRepository(context.persistence).get_settings().ac_management_enabled:
+        if not SettingsRepository(context.db_session).get_settings().ac_management_enabled:
             # Air conditioning is not enabled, skip evaluation
             if air_conditioner.is_turned_on() and air_conditioner.can_turn_off():
                 # just disable air conditioner
@@ -39,7 +39,7 @@ class EvaluateAirConditioning(AbstractCommand):
             return
 
         logging.debug("Evaluating air conditioning")
-        measure_repository = SensorMeasureRepository(context.persistence)
+        measure_repository = SensorMeasureRepository(context.db_session)
         current_measure = measure_repository.get_last_temperature(
             SensorMeasure.LIVING_ROOM,
             context.time_source.now() - timedelta(minutes=10)
@@ -50,7 +50,7 @@ class EvaluateAirConditioning(AbstractCommand):
             logging.warning('Attempted to evaluate air conditioning, but there is no current temperature measure')
             return
 
-        target = TargetTemperatureRepository(context.persistence).get_target_temperature()
+        target = TargetTemperatureRepository(context.db_session).get_target_temperature()
         logging.debug('Current t: %.2f, target t: %.2f', current_measure.temperature, target.temperature)
 
         if air_conditioner.is_turned_off() and target.is_temperature_above_range(current_measure.temperature):

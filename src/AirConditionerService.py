@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from typing import Type
 from persistence import AirConditionerPingRepository, AirConditionerStatus, AirConditionerStatusLogRepository
-from radio_bus.radio import OutboundMessage, Radio
+from radio_bus import OutboundMessage, Radio
 
 
 # Service controlling our Dimplex air conditioner

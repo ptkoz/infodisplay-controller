@@ -26,7 +26,6 @@ class Radio:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.__gpio_service_pin, GPIO.OUT)
         GPIO.output(self.__gpio_service_pin, GPIO.LOW)
-
         # entering config mode may last 40 milliseconds
         sleep(0.04)
 

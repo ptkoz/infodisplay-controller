@@ -6,8 +6,8 @@ from unittest.mock import call, Mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from command_bus import EvaluateAirConditioning
-from command_bus.executor.ExecutionContext import ExecutionContext
-from persistence.models import (
+from command_bus.ExecutionContext import ExecutionContext
+from persistence import (
     AbstractBase, AirConditionerPing, AirConditionerStatus, AirConditionerStatusLog, SensorMeasure,
     Settings, TargetTemperature,
 )
@@ -43,9 +43,9 @@ class TestEvaluateAirConditioning(TestCase):
         # noinspection PyTypeChecker
         self.context = ExecutionContext(
             self.session,
-            self.mock_datetime,
+            self.radio,
             Queue(),
-            self.radio
+            self.mock_datetime,
         )
 
         self.command = EvaluateAirConditioning()
@@ -57,7 +57,7 @@ class TestEvaluateAirConditioning(TestCase):
         self.addTypeEqualityFunc(AirConditionerStatusLog, is_status_log_eq)
 
     def tearDown(self) -> None:
-        self.context.persistence.close()
+        self.context.db_session.close()
 
     def test_air_conditioning_not_available_with_no_entries(self):
         """

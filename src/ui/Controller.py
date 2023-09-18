@@ -1,9 +1,8 @@
+import json
 import logging
 import asyncio
+from threading import Event
 import websockets
-
-from ApplicationContext import ApplicationContext
-from ui.events import AbstractEvent
 
 
 class Controller:
@@ -11,16 +10,16 @@ class Controller:
     Controls communication with the UI
     """
 
-    def __init__(self, app: ApplicationContext, port: int):
-        self.app = app
+    def __init__(self, port: int, stop: Event):
         self.port = port
+        self.stop = stop
         self.listeners = []
 
-    def publish(self, event: AbstractEvent):
+    def publish(self, message: dict):
         """
         Publish information to all connected customers
         """
-        websockets.broadcast(self.listeners, event.to_json())
+        websockets.broadcast(self.listeners, json.dumps(message))
 
     async def handle_new_listener(self, websocket):
         """
@@ -38,7 +37,7 @@ class Controller:
         Starts the websocket server that handles UI clients.
         """
         async with websockets.serve(self.handle_new_listener, "", self.port):
-            while not self.app.stop_requested:
+            while not self.stop.is_set():
                 await asyncio.sleep(5)
 
     def run(self):

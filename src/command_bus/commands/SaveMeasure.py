@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime
 from typing import Optional
-
 from persistence import SensorMeasureRepository
 from .AbstractCommand import AbstractCommand
-from command_bus.executor.ExecutionContext import ExecutionContext
+from ..ExecutionContext import ExecutionContext
 
 
 class SaveMeasure(AbstractCommand):
@@ -38,7 +37,7 @@ class SaveMeasure(AbstractCommand):
             self.voltage or 0
         )
 
-        SensorMeasureRepository(context.persistence).create(
+        SensorMeasureRepository(context.db_session).create(
             self.timestamp,
             self.kind,
             self.temperature,

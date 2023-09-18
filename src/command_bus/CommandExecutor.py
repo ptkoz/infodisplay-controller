@@ -1,10 +1,13 @@
 import logging
 import traceback
 from datetime import datetime
-from queue import Empty
-from ApplicationContext import ApplicationContext
+from queue import Empty, Queue
+from threading import Event
+from typing import Type
+from sqlalchemy.orm import Session, sessionmaker
+from radio_bus import Radio
+from .commands.AbstractCommand import AbstractCommand
 from .ExecutionContext import ExecutionContext
-from command_bus.commands import AbstractCommand
 
 
 class CommandExecutor:
@@ -13,38 +16,49 @@ class CommandExecutor:
     thread.
     """
 
-    def __init__(self, app: ApplicationContext):
-        self.app = app
+    def __init__(
+        self,
+        db_session_factory: sessionmaker[Session],
+        radio: Radio,
+        command_bus: Queue,
+        time_source: Type[datetime],
+        stop: Event
+    ):
+        self.db_session_factory = db_session_factory
+        self.radio = radio
+        self.command_bus = command_bus
+        self.time_source = time_source
+        self.stop = stop
 
     def run(self) -> None:
         """
         Runs the main loop that waits for command to appear on command queue and executes them.
         """
         execution_context = self.create_execution_context()
-        while not self.app.stop_requested:
+        while not self.stop.is_set():
             try:
-                command = self.app.command_queue.get(timeout=5)
+                command = self.command_bus.get(timeout=5)
                 if isinstance(command, AbstractCommand):
                     command.execute(execution_context)
-                    self.app.command_queue.task_done()
+                    self.command_bus.task_done()
             except Empty:
                 continue
             except Exception:
                 logging.error(traceback.format_exc())
 
                 # Reset context just in case
-                execution_context.persistence.close()
+                execution_context.db_session.close()
                 execution_context = self.create_execution_context()
 
-        execution_context.persistence.close()
+        execution_context.db_session.close()
 
     def create_execution_context(self) -> ExecutionContext:
         """
         Creates a new instance of execution context
         """
         return ExecutionContext(
-            self.app.persistence_session_factory(),
+            self.db_session_factory(),
+            self.radio,
+            self.command_bus,
             datetime,
-            self.app.command_queue,
-            self.app.radio
         )

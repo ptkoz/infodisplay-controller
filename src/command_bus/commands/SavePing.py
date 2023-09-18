@@ -2,9 +2,9 @@ import logging
 from datetime import datetime
 from AirConditionerService import AirConditionerService
 from persistence import AirConditionerPingRepository, AirConditionerStatusLogRepository
-from .EvaluateAirConditioning import EvaluateAirConditioning
 from .AbstractCommand import AbstractCommand
-from command_bus.executor.ExecutionContext import ExecutionContext
+from .EvaluateAirConditioning import EvaluateAirConditioning
+from ..ExecutionContext import ExecutionContext
 
 
 class SavePing(AbstractCommand):
@@ -21,10 +21,10 @@ class SavePing(AbstractCommand):
         """
         logging.debug("Saving ping")
 
-        ping_repository = AirConditionerPingRepository(context.persistence)
+        ping_repository = AirConditionerPingRepository(context.db_session)
         air_conditioner = AirConditionerService(
             ping_repository,
-            AirConditionerStatusLogRepository(context.persistence),
+            AirConditionerStatusLogRepository(context.db_session),
             context.time_source,
             context.radio
         )
