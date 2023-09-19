@@ -1,8 +1,10 @@
 import logging
 from time import sleep
-from serial import Serial
+# pylint: disable=E0401,E0611
+from serial import Serial  # type: ignore
+# pylint: disable=E0401
+from RPi import GPIO  # type: ignore
 from .OutboundMessage import OutboundMessage
-from RPi import GPIO
 
 
 class Radio:

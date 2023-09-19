@@ -15,9 +15,11 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+logging.getLogger('websockets.server').setLevel(logging.WARNING)
+logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
 
 stop = threading.Event()
-command_bus = Queue()
+command_bus: Queue = Queue()
 radio = Radio("/dev/ttyS0", 17)
 db_engine = create_engine("sqlite:////var/lib/infodisplay/database.db")
 db_session_factory = sessionmaker(db_engine)
@@ -25,9 +27,9 @@ db_session_factory = sessionmaker(db_engine)
 radio.setup_device()
 AbstractBase.metadata.create_all(db_engine)
 
+controller = Controller(8001, command_bus, stop)
 receiver = RadioReceiver(radio, command_bus, datetime, stop)
-executor = CommandExecutor(db_session_factory, radio, command_bus, datetime, stop)
-controller = Controller(8001, stop)
+executor = CommandExecutor(db_session_factory, radio, command_bus, controller, datetime, stop)
 
 receiving_thread = threading.Thread(target=receiver.run)
 executor_thread = threading.Thread(target=executor.run)

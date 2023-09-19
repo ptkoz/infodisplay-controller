@@ -4,7 +4,7 @@ from datetime import datetime
 from queue import Empty, Queue
 from threading import Event
 from typing import Type
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from radio_bus import Radio
 from ui import Publisher
 from .commands.AbstractCommand import AbstractCommand
@@ -19,7 +19,7 @@ class CommandExecutor:
 
     def __init__(
         self,
-        db_session_factory: sessionmaker[Session],
+        db_session_factory: sessionmaker[Session],  # pylint: disable=E1136
         radio: Radio,
         command_bus: Queue,
         publisher: Publisher,

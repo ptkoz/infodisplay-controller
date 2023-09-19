@@ -5,18 +5,30 @@ BCM = 1
 HIGH = 1
 LOW = 0
 
-def setmode(a):
+
+def setmode(a: int) -> None:
+    """
+    Stub module function
+    """
     print(a)
 
 
-def setup(a, b):
-    print(a)
+def setup(a: int, b: int) -> None:
+    """
+    Stub module function
+    """
+    print(a, b)
 
 
-def output(a, b):
-    print(a)
+def output(a: int, b: int) -> None:
+    """
+    Stub module function
+    """
+    print(a, b)
 
 
 def cleanup():
+    """
+    Stub module function
+    """
     print('a')
-

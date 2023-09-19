@@ -28,8 +28,11 @@ class TestEvaluateAirConditioning(TestCase):
         logging.disable(logging.CRITICAL)
 
         class StubRadio(Radio):
+            """
+            A stub radio implementation with mocked serial
+            """
             # noinspection PyMissingConstructor
-            def __init__(self):
+            def __init__(self): # pylint: disable=W0231
                 self.serial = Mock()
 
         self.radio = StubRadio()
@@ -52,8 +55,8 @@ class TestEvaluateAirConditioning(TestCase):
         self.command = EvaluateAirConditioning()
 
         def is_status_log_eq(first, second, msg=None) -> None:
-            self.assertEqual(first.status, second.status, 'Failed asserting status is the same')
-            self.assertEqual(first.timestamp, second.timestamp, 'Failed asserting timestamp is the same')
+            self.assertEqual(first.status, second.status, msg)
+            self.assertEqual(first.timestamp, second.timestamp, msg)
 
         self.addTypeEqualityFunc(AirConditionerStatusLog, is_status_log_eq)
 

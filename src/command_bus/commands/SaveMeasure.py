@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 from persistence import SensorMeasureRepository
+from ui import TemperatureUpdate, HumidityUpdate
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
@@ -44,3 +45,7 @@ class SaveMeasure(AbstractCommand):
             self.humidity,
             self.voltage
         )
+
+        context.publisher.publish(TemperatureUpdate(self.timestamp, self.kind, self.temperature))
+        if self.humidity is not None:
+            context.publisher.publish(HumidityUpdate(self.timestamp, self.kind, self.humidity))

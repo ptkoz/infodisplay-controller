@@ -37,7 +37,7 @@ class TestSavePing(TestCase):
         self.command = SavePing(self.NOW)
 
         def is_ping_eq(first, second, msg=None) -> None:
-            self.assertEqual(first.timestamp, second.timestamp, 'Failed asserting timestamp is the same')
+            self.assertEqual(first.timestamp, second.timestamp, msg)
 
         self.addTypeEqualityFunc(AirConditionerPing, is_ping_eq)
 

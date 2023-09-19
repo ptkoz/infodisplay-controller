@@ -55,20 +55,20 @@ class EvaluateAirConditioning(AbstractCommand):
 
         if air_conditioner.is_turned_off() and target.is_temperature_above_range(current_measure.temperature):
             # Air conditioning should be turned ON
-            if air_conditioner.can_turn_on():
-                air_conditioner.turn_on()
-                logging.info('Air conditioning TURNED ON')
-                return
-            else:
-                # TODO: schedule turning on at first possible moment
+            if not air_conditioner.can_turn_on():
+                # schedule turning on at first possible moment
                 logging.info('Air conditioning should be turned ON, but AC is in the grace period')
+                return
+
+            air_conditioner.turn_on()
+            logging.info('Air conditioning TURNED ON')
 
         if air_conditioner.is_turned_on() and target.is_temperature_below_range(current_measure.temperature):
             # Air conditioning should be turned OFF
-            if air_conditioner.can_turn_off():
-                air_conditioner.turn_off()
-                logging.info('Air conditioning TURNED OFF')
-                return
-            else:
-                # TODO: schedule turning on at first possible moment
+            if not air_conditioner.can_turn_off():
+                # schedule turning on at first possible moment
                 logging.info('Air conditioning should be turned OFF, but AC is in the grace period')
+                return
+
+            air_conditioner.turn_off()
+            logging.info('Air conditioning TURNED OFF')

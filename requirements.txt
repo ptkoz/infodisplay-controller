@@ -1,5 +1,6 @@
-pyserial
-sqlalchemy
+sqlalchemy~=2.0.20
 pylint
 mypy
-websockets
+websockets~=11.0.3
+typing_extensions
+pyserial~=3.5

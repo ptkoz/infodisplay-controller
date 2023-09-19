@@ -1,8 +1,11 @@
 import json
 import logging
 import asyncio
+from queue import Queue
 from threading import Event
-import websockets
+from typing import List
+import websockets.server
+from websockets.legacy.protocol import broadcast, WebSocketCommonProtocol
 
 
 class Controller:
@@ -10,25 +13,31 @@ class Controller:
     Controls communication with the UI
     """
 
-    def __init__(self, port: int, stop: Event):
+    def __init__(self, port: int, command_bus: Queue, stop: Event):
         self.port = port
+        self.command_bus = command_bus
         self.stop = stop
-        self.listeners = []
+        self.listeners: List = []
 
     def publish(self, message: dict):
         """
         Publish information to all connected customers
         """
-        websockets.broadcast(self.listeners, json.dumps(message))
+        broadcast(self.listeners, json.dumps(message))
 
-    async def handle_new_listener(self, websocket):
+    async def handle_new_listener(self, websocket: WebSocketCommonProtocol):
         """
         Handles a new listener joining the controller.
         """
         self.listeners.append(websocket)
         logging.debug("New consumer joined, number of consumers %d", len(self.listeners))
+
+        from command_bus import InitializeDisplay
+        self.command_bus.put_nowait(InitializeDisplay(websocket))
+
         async for message in websocket:
             logging.debug(message)
+
         self.listeners.remove(websocket)
         logging.debug("Consumer dropped, number of consumers %d", len(self.listeners))
 
@@ -36,7 +45,7 @@ class Controller:
         """
         Starts the websocket server that handles UI clients.
         """
-        async with websockets.serve(self.handle_new_listener, "", self.port):
+        async with websockets.server.serve(self.handle_new_listener, "", self.port):
             while not self.stop.is_set():
                 await asyncio.sleep(5)
 
