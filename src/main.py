@@ -27,7 +27,7 @@ db_session_factory = sessionmaker(db_engine)
 radio.setup_device()
 AbstractBase.metadata.create_all(db_engine)
 
-controller = Controller(8001, command_bus, stop)
+controller = Controller(8010, command_bus, stop)
 receiver = RadioReceiver(radio, command_bus, datetime, stop)
 executor = CommandExecutor(db_session_factory, radio, command_bus, controller, datetime, stop)
 
