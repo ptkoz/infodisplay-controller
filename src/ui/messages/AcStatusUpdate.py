@@ -1,6 +1,6 @@
 class AcStatusUpdate(dict):
     """
-    A message sent AC status changes
+    A message sent when AC status has changed
     """
 
     def __init__(self, is_working: bool):

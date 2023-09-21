@@ -1,5 +1,5 @@
 [MASTER]
 class-naming-style=PascalCase
-disable=C0103,C0114,R0903,broad-except,E0402,R0913,C0415,R0401,R0912
+disable=C0103,C0114,R0903,broad-except,E0402,R0913,C0415,R0401,R0912,R0801
 max-line-length = 120
 init-hook='import sys; sys.path.append("/Users/patryk/Devel/personal/infodisplay/src")'

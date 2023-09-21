@@ -3,9 +3,9 @@ import json
 from websockets.legacy.protocol import WebSocketCommonProtocol
 from persistence import (
     AirConditionerStatus, SensorMeasure, SensorMeasureRepository, AirConditionerPingRepository,
-    TargetTemperatureRepository, AirConditionerStatusLogRepository,
+    TargetTemperatureRepository, AirConditionerStatusLogRepository, SettingsRepository
 )
-from ui import TemperatureUpdate, HumidityUpdate, AcPing, TargetTemperatureUpdate, AcStatusUpdate
+from ui import TemperatureUpdate, HumidityUpdate, AcPing, TargetTemperatureUpdate, AcStatusUpdate, AcManagementUpdate
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
@@ -46,6 +46,14 @@ class InitializeDisplay(AbstractCommand):
         """
         Sends the current status of the AC
         """
+        await self.websocket.send(
+            json.dumps(
+                AcManagementUpdate(
+                    SettingsRepository(context.db_session).get_settings().ac_management_enabled
+                )
+            )
+        )
+
         await self.websocket.send(
             json.dumps(
                 TargetTemperatureUpdate(

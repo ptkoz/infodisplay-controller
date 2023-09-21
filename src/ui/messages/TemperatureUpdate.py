@@ -3,7 +3,7 @@ from datetime import datetime
 
 class TemperatureUpdate(dict):
     """
-    A message sent when a new measure is available.
+    A message sent when new temperature measure is available.
     """
 
     def __init__(self, timestamp: datetime, kind: int, temperature: float):
