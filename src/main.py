@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import WatchedFileHandler
 import signal
 import threading
 from datetime import datetime
@@ -11,9 +12,10 @@ from radio_bus import Radio, RadioReceiver
 from ui import Controller
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s %(levelname)-8s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[WatchedFileHandler("/var/log/infodisplay.log")]
 )
 logging.getLogger('websockets.server').setLevel(logging.WARNING)
 logging.getLogger('websockets.protocol').setLevel(logging.WARNING)

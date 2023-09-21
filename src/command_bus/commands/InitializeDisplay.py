@@ -1,9 +1,11 @@
 import asyncio
 import json
-from datetime import timedelta
 from websockets.legacy.protocol import WebSocketCommonProtocol
-from persistence import SensorMeasure, SensorMeasureRepository
-from ui import TemperatureUpdate, HumidityUpdate
+from persistence import (
+    AirConditionerStatus, SensorMeasure, SensorMeasureRepository, AirConditionerPingRepository,
+    TargetTemperatureRepository, AirConditionerStatusLogRepository,
+)
+from ui import TemperatureUpdate, HumidityUpdate, AcPing, TargetTemperatureUpdate, AcStatusUpdate
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
@@ -12,6 +14,7 @@ class InitializeDisplay(AbstractCommand):
     """
     A command that initialized a freshly-connected UI client
     """
+
     def __init__(self, websocket: WebSocketCommonProtocol):
         self.websocket = websocket
 
@@ -19,18 +22,16 @@ class InitializeDisplay(AbstractCommand):
         """
         Send all the required data to the client.
         """
-        asyncio.run(self.send(SensorMeasure.OUTDOOR, context))
-        asyncio.run(self.send(SensorMeasure.LIVING_ROOM, context))
-        asyncio.run(self.send(SensorMeasure.BEDROOM, context))
+        asyncio.run(self.send_measure(SensorMeasure.OUTDOOR, context))
+        asyncio.run(self.send_measure(SensorMeasure.LIVING_ROOM, context))
+        asyncio.run(self.send_measure(SensorMeasure.BEDROOM, context))
+        asyncio.run(self.send_ac_status(context))
 
-    async def send(self, kind: int, context: ExecutionContext):
+    async def send_measure(self, kind: int, context: ExecutionContext):
         """
         Send the data for given measure kind
         """
-        measure = (
-            SensorMeasureRepository(context.db_session)
-            .get_last_temperature(kind, context.time_source.now() - timedelta(minutes=60))
-        )
+        measure = SensorMeasureRepository(context.db_session).get_last_temperature(kind)
 
         if measure is None:
             return
@@ -40,3 +41,26 @@ class InitializeDisplay(AbstractCommand):
             return
 
         await self.websocket.send(json.dumps(HumidityUpdate(measure.timestamp, kind, measure.humidity)))
+
+    async def send_ac_status(self, context: ExecutionContext):
+        """
+        Sends the current status of the AC
+        """
+        await self.websocket.send(
+            json.dumps(
+                TargetTemperatureUpdate(
+                    TargetTemperatureRepository(context.db_session).get_target_temperature().temperature
+                )
+            )
+        )
+
+        current_status = AirConditionerStatusLogRepository(context.db_session).get_current_status()
+        await self.websocket.send(
+            json.dumps(
+                AcStatusUpdate(current_status == AirConditionerStatus.TURNED_ON)
+            )
+        )
+
+        last_ping = AirConditionerPingRepository(context.db_session).get_last_ping()
+        if last_ping is not None:
+            await self.websocket.send(json.dumps(AcPing(last_ping.timestamp)))

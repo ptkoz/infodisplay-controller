@@ -13,6 +13,13 @@ def setmode(a: int) -> None:
     print(a)
 
 
+def setwarnings(a: bool) -> None:
+    """
+    Stub module function
+    """
+    print(a)
+
+
 def setup(a: int, b: int) -> None:
     """
     Stub module function

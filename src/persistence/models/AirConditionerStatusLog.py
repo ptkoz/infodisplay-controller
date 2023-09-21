@@ -10,7 +10,6 @@ class AirConditionerStatus(Enum):
     """
     TURNED_ON = 1
     TURNED_OFF = 0
-    UNAVAILABLE = -1
 
 
 class AirConditionerStatusLog(AbstractBase):

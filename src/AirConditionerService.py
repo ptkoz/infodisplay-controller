@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Type
 from persistence import AirConditionerPingRepository, AirConditionerStatus, AirConditionerStatusLogRepository
 from radio_bus import OutboundMessage, Radio
+from ui import Publisher, AcStatusUpdate
 
 
 # Service controlling our Dimplex air conditioner
@@ -27,12 +28,14 @@ class AirConditionerService:
         air_conditioner_ping_repository: AirConditionerPingRepository,
         air_conditioner_status_log_repository: AirConditionerStatusLogRepository,
         time_source: Type[datetime],
-        radio: Radio
+        radio: Radio,
+        publisher: Publisher,
     ):
         self.__ping_repository = air_conditioner_ping_repository
         self.__status_log_repository = air_conditioner_status_log_repository
         self.__time_source = time_source
         self.__radio = radio
+        self.__publisher = publisher
 
     def is_available(self) -> bool:
         """
@@ -95,6 +98,7 @@ class AirConditionerService:
                 AirConditionerStatus.TURNED_OFF,
                 self.__time_source.now()
             )
+            self.__publisher.publish(AcStatusUpdate(False))
 
     def turn_on(self) -> None:
         """
@@ -115,6 +119,8 @@ class AirConditionerService:
         time.sleep(0.7)
         self.__radio.send(message)
 
+        self.__publisher.publish(AcStatusUpdate(True))
+
     def turn_off(self) -> None:
         """
         Turns off the air conditioner and records turned on status
@@ -133,3 +139,5 @@ class AirConditionerService:
         self.__radio.send(message)
         time.sleep(0.7)
         self.__radio.send(message)
+
+        self.__publisher.publish(AcStatusUpdate(False))

@@ -26,6 +26,7 @@ class Radio:
         Sets up the device before it can be used.
         """
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
         GPIO.setup(self.__gpio_service_pin, GPIO.OUT)
         GPIO.output(self.__gpio_service_pin, GPIO.LOW)
         # entering config mode may last 40 milliseconds

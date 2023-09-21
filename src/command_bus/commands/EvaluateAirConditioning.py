@@ -23,13 +23,14 @@ class EvaluateAirConditioning(AbstractCommand):
             AirConditionerPingRepository(context.db_session),
             AirConditionerStatusLogRepository(context.db_session),
             context.time_source,
-            context.radio
+            context.radio,
+            context.publisher,
         )
 
         if not SettingsRepository(context.db_session).get_settings().ac_management_enabled:
             # Air conditioning is not enabled, skip evaluation
             if air_conditioner.is_turned_on() and air_conditioner.can_turn_off():
-                # just disable air conditioner
+                # management is off, but we were the ones who enabled it, so let's disable it
                 air_conditioner.turn_off()
             return
 
