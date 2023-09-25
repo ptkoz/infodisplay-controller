@@ -12,7 +12,7 @@ from radio_bus import Radio, RadioReceiver
 from ui import Controller
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s %(levelname)-8s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[WatchedFileHandler("/var/log/infodisplay.log")]

@@ -1,6 +1,6 @@
 from .AbstractBase import AbstractBase
-from .AirConditionerPing import AirConditionerPing
-from .AirConditionerStatusLog import AirConditionerStatusLog, AirConditionerStatus
+from .DeviceControl import DeviceControl
+from .DevicePing import DevicePing
+from .DeviceStatus import DeviceStatus
 from .SensorMeasure import SensorMeasure
 from .TargetTemperature import TargetTemperature
-from .Settings import Settings

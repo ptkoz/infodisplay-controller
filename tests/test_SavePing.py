@@ -6,7 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from command_bus import SavePing
 from command_bus.ExecutionContext import ExecutionContext
-from persistence import AbstractBase, AirConditionerPing
+from persistence import AbstractBase, DevicePing
+from domain_types import DeviceKind
 
 
 class TestSavePing(TestCase):
@@ -34,48 +35,53 @@ class TestSavePing(TestCase):
             self.mock_datetime,
         )
 
-        self.command = SavePing(self.NOW)
-
         def is_ping_eq(first, second, msg=None) -> None:
             self.assertEqual(first.timestamp, second.timestamp, msg)
 
-        self.addTypeEqualityFunc(AirConditionerPing, is_ping_eq)
+        self.addTypeEqualityFunc(DevicePing, is_ping_eq)
+
+    def tearDown(self) -> None:
+        self.session.close()
 
     def test_saving_next_ping(self):
         """
         Given that pings are arriving as usual, every minute, this should just save the next ping
         """
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=3)))
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=2)))
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=1)))
+        self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=3)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=2)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
 
-        self.command.execute(self.context)
+        SavePing(DeviceKind.HEATING, self.NOW).execute(self.context)
 
         self.mock_queue.put_nowait.assert_not_called()
 
-        pings = self.session.query(AirConditionerPing).all()
-        self.assertEqual(4, len(pings))
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=3)), pings[0])
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=2)), pings[1])
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=1)), pings[2])
-        self.assertEqual(AirConditionerPing(self.NOW), pings[3])
+        pings = self.session.query(DevicePing).all()
+        self.assertEqual(5, len(pings))
+        self.assertEqual(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=3)), pings[0])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3)), pings[1])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=2)), pings[2])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)), pings[3])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW), pings[4])
 
     def test_saving_after_inactive_period(self):
         """
-        Given that there were no pings for some time, this ping should evaluate air conditioning
-        as we assume AC has just went back online
+        Given that there were no pings for some time, this ping should evaluate temperature
+        as we assume device has just went back online
         """
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=5, seconds=3)))
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=4, seconds=2)))
-        self.session.add(AirConditionerPing(self.NOW - timedelta(minutes=3, seconds=1)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=5, seconds=3)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=4, seconds=2)))
+        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3, seconds=1)))
+        self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1, seconds=0)))
 
-        self.command.execute(self.context)
+        SavePing(DeviceKind.HEATING, self.NOW).execute(self.context)
 
         self.mock_queue.put_nowait.assert_called_once()
 
-        pings = self.session.query(AirConditionerPing).all()
-        self.assertEqual(4, len(pings))
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=5, seconds=3)), pings[0])
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=4, seconds=2)), pings[1])
-        self.assertEqual(AirConditionerPing(self.NOW - timedelta(minutes=3, seconds=1)), pings[2])
-        self.assertEqual(AirConditionerPing(self.NOW), pings[3])
+        pings = self.session.query(DevicePing).all()
+        self.assertEqual(5, len(pings))
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=5, seconds=3)), pings[0])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=4, seconds=2)), pings[1])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3, seconds=1)), pings[2])
+        self.assertEqual(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1, seconds=0)), pings[3])
+        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW), pings[4])

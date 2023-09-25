@@ -2,10 +2,14 @@ import asyncio
 import json
 from websockets.legacy.protocol import WebSocketCommonProtocol
 from persistence import (
-    AirConditionerStatus, SensorMeasure, SensorMeasureRepository, AirConditionerPingRepository,
-    TargetTemperatureRepository, AirConditionerStatusLogRepository, SettingsRepository
+    SensorMeasureRepository, DevicePingRepository, TargetTemperatureRepository, DeviceStatusRepository,
+    DeviceControlRepository,
 )
-from ui import TemperatureUpdate, HumidityUpdate, AcPing, TargetTemperatureUpdate, AcStatusUpdate, AcManagementUpdate
+from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
+from ui import (
+    TemperatureUpdate, HumidityUpdate, DevicePingReceived, TargetTemperatureUpdate, DeviceStatusUpdate,
+    DeviceControlUpdate,
+)
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
@@ -22,12 +26,13 @@ class InitializeDisplay(AbstractCommand):
         """
         Send all the required data to the client.
         """
-        asyncio.run(self.send_measure(SensorMeasure.OUTDOOR, context))
-        asyncio.run(self.send_measure(SensorMeasure.LIVING_ROOM, context))
-        asyncio.run(self.send_measure(SensorMeasure.BEDROOM, context))
-        asyncio.run(self.send_ac_status(context))
+        for measure_kind in MeasureKind:
+            asyncio.run(self.send_measure(measure_kind, context))
 
-    async def send_measure(self, kind: int, context: ExecutionContext):
+        for device_kind in DeviceKind:
+            asyncio.run(self.send_device_status(device_kind, context))
+
+    async def send_measure(self, kind: MeasureKind, context: ExecutionContext):
         """
         Send the data for given measure kind
         """
@@ -42,33 +47,37 @@ class InitializeDisplay(AbstractCommand):
 
         await self.websocket.send(json.dumps(HumidityUpdate(measure.timestamp, kind, measure.humidity)))
 
-    async def send_ac_status(self, context: ExecutionContext):
+    async def send_device_status(self, kind: DeviceKind, context: ExecutionContext):
         """
-        Sends the current status of the AC
+        Sends the current status of given device kind
         """
         await self.websocket.send(
             json.dumps(
-                AcManagementUpdate(
-                    SettingsRepository(context.db_session).get_settings().ac_management_enabled
+                DeviceControlUpdate(
+                    kind,
+                    [i.measure_kind for i in DeviceControlRepository(context.db_session).get_measures_controlling(kind)]
                 )
             )
         )
 
+        current_status = DeviceStatusRepository(context.db_session).get_current_status(kind)
         await self.websocket.send(
             json.dumps(
-                TargetTemperatureUpdate(
-                    TargetTemperatureRepository(context.db_session).get_target_temperature().temperature
+                DeviceStatusUpdate(kind, current_status == PowerStatus.TURNED_ON)
+            )
+        )
+
+        for mode in OperatingMode:
+            await self.websocket.send(
+                json.dumps(
+                    TargetTemperatureUpdate(
+                        kind,
+                        mode,
+                        TargetTemperatureRepository(context.db_session).get_target_temperature(kind, mode).temperature
+                    )
                 )
             )
-        )
 
-        current_status = AirConditionerStatusLogRepository(context.db_session).get_current_status()
-        await self.websocket.send(
-            json.dumps(
-                AcStatusUpdate(current_status == AirConditionerStatus.TURNED_ON)
-            )
-        )
-
-        last_ping = AirConditionerPingRepository(context.db_session).get_last_ping()
+        last_ping = DevicePingRepository(context.db_session).get_last_ping(kind)
         if last_ping is not None:
-            await self.websocket.send(json.dumps(AcPing(last_ping.timestamp)))
+            await self.websocket.send(json.dumps(DevicePingReceived(last_ping.kind, last_ping.timestamp)))

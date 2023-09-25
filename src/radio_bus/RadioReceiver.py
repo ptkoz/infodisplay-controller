@@ -4,7 +4,8 @@ from queue import Queue
 from struct import unpack
 from threading import Event
 from typing import Type
-from persistence import AirConditionerPing, SensorMeasure
+from domain_types import DeviceKind, MeasureKind
+from persistence import SensorMeasure
 from .radio.InboundMessage import InboundMessage
 from .radio.Radio import Radio
 from .radio.MessageStartMarker import MESSAGE_START_MARKER
@@ -48,30 +49,32 @@ class RadioReceiver:
                 logging.info('Ignoring message to %#x (with %d bytes)', msg.recipient, msg.length)
                 continue
 
-            if msg.kind == AirConditionerPing.MESSAGE_KIND:
+            if msg.kind == DeviceKind.HEATING or msg.kind == DeviceKind.COOLING:
                 if msg.length != 0:
                     logging.warning("Unexpected %d bytes in %#x message", msg.length, msg.kind)
 
                 from command_bus import SavePing
-                self.command_bus.put_nowait(SavePing(timestamp))
-            elif msg.kind in [SensorMeasure.LIVING_ROOM, SensorMeasure.BEDROOM]:
+                self.command_bus.put_nowait(SavePing(msg.kind, timestamp))
+            elif msg.kind == MeasureKind.LIVING_ROOM or msg.kind == MeasureKind.BEDROOM:
                 if msg.length != 12:
                     logging.warning("Ignoring message %#x: expected 12 bytes, got %d", msg.kind, msg.length)
                     continue
 
                 [temperature, humidity, voltage] = unpack("<fff", msg.data)
+                measure = SensorMeasure(timestamp, msg.kind, temperature, humidity, voltage)
+
                 from command_bus import SaveMeasure
-                self.command_bus.put_nowait(SaveMeasure(timestamp, msg.kind, temperature, humidity, voltage))
-                if msg.kind == SensorMeasure.LIVING_ROOM:
-                    from command_bus import EvaluateAirConditioning
-                    self.command_bus.put_nowait(EvaluateAirConditioning())
-            elif msg.kind == SensorMeasure.OUTDOOR:
+                self.command_bus.put_nowait(SaveMeasure(measure))
+                from command_bus import EvaluateMeasure
+                self.command_bus.put_nowait(EvaluateMeasure(measure))
+            elif msg.kind == MeasureKind.OUTDOOR:
                 if msg.length != 8:
                     logging.warning("Ignoring message %#x: expected 8 bytes, got %d", msg.kind, msg.length)
                     continue
 
                 [temperature, voltage] = unpack("<ff", msg.data)
+                measure = SensorMeasure(timestamp, msg.kind, temperature, None, voltage)
                 from command_bus import SaveMeasure
-                self.command_bus.put_nowait(SaveMeasure(timestamp, msg.kind, temperature, None, voltage))
+                self.command_bus.put_nowait(SaveMeasure(measure))
             else:
                 logging.warning('Unrecognized message kind %#x (with %d bytes)', msg.kind, msg.length)

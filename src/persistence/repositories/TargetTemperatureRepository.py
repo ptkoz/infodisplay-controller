@@ -1,3 +1,4 @@
+from domain_types import DeviceKind, OperatingMode
 from persistence.models import TargetTemperature
 from ._AbstractRepository import AbstractRepository
 
@@ -7,16 +8,36 @@ class TargetTemperatureRepository(AbstractRepository):
     Repository for managing persisted target temperature
     """
 
-    def get_target_temperature(self) -> TargetTemperature:
+    def get_target_temperature(self, device_kind: DeviceKind, operating_mode: OperatingMode) -> TargetTemperature:
         """
-        Returns the configured target temperature
+        Returns the configured target temperature for given device and operating mode
         """
-        target_temperature = self._session.query(TargetTemperature).filter(TargetTemperature.id == 1).first()
+        target_temperature = (
+            self
+            ._session
+            .query(TargetTemperature)
+            .filter(TargetTemperature.device_kind == device_kind)
+            .filter(TargetTemperature.operating_mode == operating_mode)
+            .first()
+        )
 
         if target_temperature is None:
-            target_temperature = TargetTemperature(1, 2350)
+            target_temperature = TargetTemperature(
+                device_kind,
+                operating_mode,
+                self.__get_default_temperature(device_kind)
+            )
 
             self._session.add(target_temperature)
             self._session.commit()
 
         return target_temperature
+
+    def __get_default_temperature(self, device_kind: DeviceKind) -> int:
+        """
+        Returns default temperature for given device kind
+        """
+        if device_kind == DeviceKind.COOLING:
+            return 2600
+
+        return 1800
