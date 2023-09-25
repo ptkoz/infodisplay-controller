@@ -55,7 +55,7 @@ class InitializeDisplay(AbstractCommand):
             json.dumps(
                 DeviceControlUpdate(
                     kind,
-                    [i.measure_kind for i in DeviceControlRepository(context.db_session).get_measures_controlling(kind)]
+                    DeviceControlRepository(context.db_session).get_measures_controlling(kind)
                 )
             )
         )
