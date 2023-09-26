@@ -10,7 +10,7 @@ class DeviceStatusUpdate(dict):
         super().__init__(
             type="device/updateStatus",
             payload={
-                "kind": kind,
+                "kind": kind.value,
                 "isWorking": is_working
             }
         )

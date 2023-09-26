@@ -11,7 +11,7 @@ class DevicePingReceived(dict):
         super().__init__(
             type="device/ping",
             payload={
-                "kind": device_kind,
+                "kind": device_kind.value,
                 "timestamp": timestamp.isoformat(),
             }
         )

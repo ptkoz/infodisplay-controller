@@ -10,8 +10,8 @@ class TargetTemperatureUpdate(dict):
         super().__init__(
             type="device/updateTargetTemperature",
             payload={
-                "kind": device_kind,
-                "mode": mode,
+                "kind": device_kind.value,
+                "mode": mode.value,
                 "temperature": temperature
             }
         )

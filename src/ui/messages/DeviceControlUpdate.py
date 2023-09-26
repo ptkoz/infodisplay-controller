@@ -12,15 +12,15 @@ class DeviceControlUpdate(dict):
         controlled_by: dict = {}
 
         for mode in OperatingMode:
-            controlled_by[mode.name] = []
+            controlled_by[mode.value] = []
 
         for control in device_control:
-            controlled_by[control.operating_mode].append(control.measure_kind)
+            controlled_by[control.operating_mode.value].append(control.measure_kind.value)
 
         super().__init__(
             type="device/updateDeviceControl",
             payload={
-                "deviceKind": device_kind,
+                "deviceKind": device_kind.value,
                 "controlledBy": controlled_by
             }
         )

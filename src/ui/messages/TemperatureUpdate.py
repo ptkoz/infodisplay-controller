@@ -9,10 +9,10 @@ class TemperatureUpdate(dict):
 
     def __init__(self, timestamp: datetime, kind: MeasureKind, temperature: float):
         super().__init__(
-            type="measures/updateTemperature",
+            type="measure/updateTemperature",
             payload={
                 "timestamp": timestamp.isoformat(),
-                "kind": kind,
+                "kind": kind.value,
                 "temperature": temperature,
             }
         )

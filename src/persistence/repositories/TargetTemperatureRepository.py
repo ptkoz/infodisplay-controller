@@ -40,4 +40,4 @@ class TargetTemperatureRepository(AbstractRepository):
         if device_kind == DeviceKind.COOLING:
             return 2600
 
-        return 1800
+        return 1700

@@ -49,31 +49,31 @@ class RadioReceiver:
                 logging.info('Ignoring message to %#x (with %d bytes)', msg.recipient, msg.length)
                 continue
 
-            if msg.kind == DeviceKind.HEATING or msg.kind == DeviceKind.COOLING:
+            if msg.kind in [DeviceKind.HEATING.value, DeviceKind.COOLING.value]:
                 if msg.length != 0:
                     logging.warning("Unexpected %d bytes in %#x message", msg.length, msg.kind)
 
                 from command_bus import SavePing
-                self.command_bus.put_nowait(SavePing(msg.kind, timestamp))
-            elif msg.kind == MeasureKind.LIVING_ROOM or msg.kind == MeasureKind.BEDROOM:
+                self.command_bus.put_nowait(SavePing(DeviceKind(msg.kind), timestamp))
+            elif msg.kind in [MeasureKind.LIVING_ROOM.value, MeasureKind.BEDROOM.value]:
                 if msg.length != 12:
                     logging.warning("Ignoring message %#x: expected 12 bytes, got %d", msg.kind, msg.length)
                     continue
 
                 [temperature, humidity, voltage] = unpack("<fff", msg.data)
-                measure = SensorMeasure(timestamp, msg.kind, temperature, humidity, voltage)
+                measure = SensorMeasure(timestamp, MeasureKind(msg.kind), temperature, humidity, voltage)
 
                 from command_bus import SaveMeasure
                 self.command_bus.put_nowait(SaveMeasure(measure))
                 from command_bus import EvaluateMeasure
                 self.command_bus.put_nowait(EvaluateMeasure(measure))
-            elif msg.kind == MeasureKind.OUTDOOR:
+            elif msg.kind == MeasureKind.OUTDOOR.value:
                 if msg.length != 8:
                     logging.warning("Ignoring message %#x: expected 8 bytes, got %d", msg.kind, msg.length)
                     continue
 
                 [temperature, voltage] = unpack("<ff", msg.data)
-                measure = SensorMeasure(timestamp, msg.kind, temperature, None, voltage)
+                measure = SensorMeasure(timestamp, MeasureKind(msg.kind), temperature, None, voltage)
                 from command_bus import SaveMeasure
                 self.command_bus.put_nowait(SaveMeasure(measure))
             else:

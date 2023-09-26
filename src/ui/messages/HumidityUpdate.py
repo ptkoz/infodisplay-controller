@@ -9,10 +9,10 @@ class HumidityUpdate(dict):
 
     def __init__(self, timestamp: datetime, kind: MeasureKind, humidity: float):
         super().__init__(
-            type="measures/updateHumidity",
+            type="measure/updateHumidity",
             payload={
                 "timestamp": timestamp.isoformat(),
-                "kind": kind,
+                "kind": kind.value,
                 "humidity": humidity,
             }
         )
