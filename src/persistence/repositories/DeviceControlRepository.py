@@ -10,6 +10,32 @@ class DeviceControlRepository(AbstractRepository):
     Repository for managing controller settings
     """
 
+    def set_controlling_measures(self, device_kind: DeviceKind, mode: OperatingMode, measures: List[MeasureKind]):
+        """
+        Sets measures that will control given device in given mode.
+        """
+        for device_control in self.get_measures_controlling(device_kind, mode):
+            self._session.delete(device_control)
+
+        for measure_kind in measures:
+            self._session.add(DeviceControl(device_kind, measure_kind, mode))
+
+    def get_measures_controlling(
+        self,
+        device_kind: DeviceKind,
+        mode: Optional[OperatingMode] = None
+    ) -> List[DeviceControl]:
+        """
+        Returns a list of measures thar are controlling given device kind, optionally narrowed down
+        to given operating mode
+        """
+        query = self._session.query(DeviceControl).filter(DeviceControl.device_kind == device_kind)
+
+        if mode is not None:
+            query = query.filter(DeviceControl.operating_mode == mode)
+
+        return query.all()
+
     def get_devices_controlled_by(
         self,
         measure_kind: MeasureKind,
@@ -27,22 +53,6 @@ class DeviceControlRepository(AbstractRepository):
             .order_by(DeviceControl.id)
             .all()
         )
-
-    def get_measures_controlling(
-        self,
-        device_kind: DeviceKind,
-        mode: Optional[OperatingMode] = None
-    ) -> List[DeviceControl]:
-        """
-        Returns a list of measures thar are controlling given device kind, optionally narrowed down
-        to given operating mode
-        """
-        query = self._session.query(DeviceControl).filter(DeviceControl.device_kind == device_kind)
-
-        if mode is not None:
-            query = query.filter(DeviceControl.operating_mode == mode)
-
-        return query.all()
 
     def get_mode_for(self, timestamp: datetime) -> OperatingMode:
         """

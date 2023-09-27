@@ -71,11 +71,7 @@ class InitializeDisplay(AbstractCommand):
         for mode in OperatingMode:
             await self.websocket.send(
                 json.dumps(
-                    TargetTemperatureUpdate(
-                        kind,
-                        mode,
-                        target_temperature_repository.get_target_temperature(kind, mode).temperature
-                    )
+                    TargetTemperatureUpdate(target_temperature_repository.get_target_temperature(kind, mode))
                 )
             )
 

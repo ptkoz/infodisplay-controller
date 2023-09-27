@@ -36,7 +36,8 @@ class Controller:
         self.command_bus.put_nowait(InitializeDisplay(websocket))
 
         async for message in websocket:
-            logging.debug(message)
+            from command_bus import UpdateConfiguration
+            self.command_bus.put_nowait(UpdateConfiguration(json.loads(message)))
 
         self.listeners.remove(websocket)
         logging.debug("Consumer dropped, number of consumers %d", len(self.listeners))

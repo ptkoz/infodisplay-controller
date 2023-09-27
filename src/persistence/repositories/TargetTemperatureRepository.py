@@ -8,6 +8,21 @@ class TargetTemperatureRepository(AbstractRepository):
     Repository for managing persisted target temperature
     """
 
+    def set_target_temperature(
+        self,
+        device_kind: DeviceKind,
+        operating_mode: OperatingMode,
+        temperature: float
+    ) -> TargetTemperature:
+        """
+        Sets target temperature for given device and operating mode
+        """
+        target_temperature = self.get_target_temperature(device_kind, operating_mode)
+        target_temperature.temperature_centi = round(temperature * 100)
+        self._session.commit()
+
+        return target_temperature
+
     def get_target_temperature(self, device_kind: DeviceKind, operating_mode: OperatingMode) -> TargetTemperature:
         """
         Returns the configured target temperature for given device and operating mode
