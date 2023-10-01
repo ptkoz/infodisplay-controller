@@ -1,5 +1,8 @@
 from __future__ import annotations
+from hashlib import blake2s
+from struct import unpack
 from typing import Optional
+from secrets import HMAC_KEY
 from .Radio import Radio
 
 
@@ -26,10 +29,40 @@ class InboundMessage:
 
             i += 1
 
-        self.recipient: int = result[0]
-        self.kind: int = result[1]
-        self.data: bytes = bytes(result[2:])
-        self.length: int = len(self.data)
+        self.__is_hmac_valid: bool
+        self.nounce: int
+        self.fromAddress: int
+        self.toAddress: int
+        self.command: int
+        self.extended_bytes: bytes
+        self.extended_bytes_length: int
+
+        if len(data) >= 23:
+            blake = blake2s(key=HMAC_KEY, digest_size=16)
+            blake.update(result[16:])
+
+            self.__is_hmac_valid = blake.digest() == result[:16]
+            [self.nounce] = unpack("<L", result[16:20])
+            self.from_address = result[20]
+            self.to_address = result[21]
+            self.command = result[22]
+            self.extended_bytes = bytes(result[23:])
+            self.extended_bytes_length = len(self.extended_bytes)
+        else:
+            self.__is_hmac_valid = False
+            self.nounce = 0
+            self.from_address = 0
+            self.to_address = 0
+            self.command = 0
+            self.extended_bytes = bytes()
+            self.extended_bytes_length = 0
+
+    def is_valid(self, last_inbound_nounce: int):
+        """
+        Confirms message is authenticated, valid and hasn't been repeated (monotonically increasing nounce
+        hasn't been used before)
+        """
+        return self.__is_hmac_valid and last_inbound_nounce < self.nounce
 
     @staticmethod
     def receive_from_radio(radio: Radio, size: int) -> Optional[InboundMessage]:

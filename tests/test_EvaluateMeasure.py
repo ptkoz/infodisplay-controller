@@ -17,8 +17,11 @@ class TestEvaluateMeasure(TestCase):
     Test case for air conditioning evaluation
     """
     NOW = datetime(2023, 9, 13, 11, 35, 15)
-    TURN_ON_BYTES = b'\xFF\x03\x8A\x02\x01'
-    TURN_OFF_BYTES = b'\xFF\x03\x8A\x02\x02'
+    TURN_ON_BYTES = \
+        b'\xff\x1cY S\x07\x10\x8c\x04T*\x8f\x04\t\x8e\x07?\x8a\x05\x88\x06\x02W\x00\x00\x00\x00\x100\x01'
+
+    TURN_OFF_BYTES = \
+        b'\xff\x1e\x8b\x038\x8e\x03\x16\x01\x8b\x0c\x1a\x89\x02\t\\\x8a\x08>\x88\x05\x8b\nvQ\x00\x00\x00\x00\x100\x02'
 
     def setUp(self) -> None:
         engine = create_engine("sqlite://")
@@ -56,7 +59,7 @@ class TestEvaluateMeasure(TestCase):
             self.mock_datetime,
         )
 
-        def is_status_log_eq(first, second, msg=None) -> None:
+        def is_status_log_eq(first: DeviceStatus, second: DeviceStatus, msg=None) -> None:
             self.assertEqual(first.kind, second.kind, msg)
             self.assertEqual(first.status, second.status, msg)
             self.assertEqual(first.timestamp, second.timestamp, msg)

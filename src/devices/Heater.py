@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from typing import Type
+from secrets import MY_ADDRESS
 from domain_types import DeviceKind
 from persistence import DevicePingRepository, DeviceStatusRepository
 from radio_bus import OutboundMessage, Radio
@@ -66,7 +67,7 @@ class Heater(AbstractDevice):
         """
         self._register_turn_on()
 
-        message = OutboundMessage(0xA3, 0x01)
+        message = OutboundMessage(MY_ADDRESS, DeviceKind.HEATING.value, 0x01, 0)
         self.radio.send(message)
         time.sleep(0.7)
         self.radio.send(message)
@@ -77,7 +78,7 @@ class Heater(AbstractDevice):
         """
         self._register_turn_off()
 
-        message = OutboundMessage(0xA3, 0x02)
+        message = OutboundMessage(MY_ADDRESS, DeviceKind.HEATING.value, 0x02, 0)
         self.radio.send(message)
         time.sleep(0.7)
         self.radio.send(message)
