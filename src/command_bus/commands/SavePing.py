@@ -40,7 +40,5 @@ class SavePing(AbstractCommand):
         context.publisher.publish(DevicePingReceived(self.kind, self.timestamp))
 
         if not was_previously_online:
-            # Device came back online after period of inactivity. Assume it was off evaluate immediately.
-            # Hence, that if assume_off_status recorded status as off, the evaluation won't work due to grace period
-            device.assume_off_status()
+            # Device came back online after period of inactivity. Evaluate immediately.
             context.command_queue.put_nowait(EvaluateDevice(self.kind))

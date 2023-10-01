@@ -17,6 +17,12 @@ class NounceRepository(AbstractRepository):
 
         return nounce
 
+    def get_last_inbound_nounce(self, owner: int):
+        """
+        Returns most recently recorded inbound nounce
+        """
+        return self.get_current_nounce(owner).inbound
+
     def register_inbound_nounce(self, owner: int, value: int):
         """
         Returns most recently recorded ping for given device kind

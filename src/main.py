@@ -30,7 +30,7 @@ radio.setup_device()
 AbstractBase.metadata.create_all(db_engine)
 
 controller = Controller(8010, command_bus, stop)
-receiver = RadioReceiver(radio, command_bus, datetime, stop)
+receiver = RadioReceiver(radio, command_bus, datetime, stop, db_session_factory)
 executor = CommandExecutor(db_session_factory, radio, command_bus, controller, datetime, stop)
 
 receiving_thread = threading.Thread(target=receiver.run)
