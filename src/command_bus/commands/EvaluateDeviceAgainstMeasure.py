@@ -2,7 +2,7 @@ import logging
 from devices import get_device_for_kind
 from domain_types import DeviceKind, OperatingMode
 from persistence import (
-    DevicePingRepository, DeviceStatusRepository, SensorMeasure, TargetTemperatureRepository,
+    DevicePingRepository, DeviceStatusRepository, NounceRepository, SensorMeasure, TargetTemperatureRepository,
 )
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
@@ -26,6 +26,7 @@ class EvaluateDeviceAgainstMeasure(AbstractCommand):
             self.device_kind,
             DevicePingRepository(context.db_session),
             DeviceStatusRepository(context.db_session),
+            NounceRepository(context.db_session),
             context.time_source,
             context.publisher,
             context.radio

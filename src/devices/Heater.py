@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Type
 from secrets import MY_ADDRESS
 from domain_types import DeviceKind
-from persistence import DevicePingRepository, DeviceStatusRepository
+from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository
 from radio_bus import OutboundMessage, Radio
 from ui import Publisher
 from .AbstractDevice import AbstractDevice
@@ -18,11 +18,19 @@ class Heater(AbstractDevice):
         self,
         device_ping_repository: DevicePingRepository,
         device_status_repository: DeviceStatusRepository,
+        nounce_repository: NounceRepository,
         time_source: Type[datetime],
         publisher: Publisher,
         radio: Radio,
     ):
-        super().__init__(DeviceKind.HEATING, device_ping_repository, device_status_repository, time_source, publisher)
+        super().__init__(
+            DeviceKind.HEATING,
+            device_ping_repository,
+            device_status_repository,
+            nounce_repository,
+            time_source,
+            publisher
+        )
         self.radio = radio
 
     def can_cool_down(self) -> bool:
@@ -67,7 +75,12 @@ class Heater(AbstractDevice):
         """
         self._register_turn_on()
 
-        message = OutboundMessage(MY_ADDRESS, DeviceKind.HEATING.value, 0x01, 0)
+        message = OutboundMessage(
+            MY_ADDRESS,
+            DeviceKind.HEATING.value,
+            0x01,
+            self.nounce_repository.next_outbound_nounce(DeviceKind.HEATING.value)
+        )
         self.radio.send(message)
         time.sleep(0.7)
         self.radio.send(message)
@@ -78,7 +91,12 @@ class Heater(AbstractDevice):
         """
         self._register_turn_off()
 
-        message = OutboundMessage(MY_ADDRESS, DeviceKind.HEATING.value, 0x02, 0)
+        message = OutboundMessage(
+            MY_ADDRESS,
+            DeviceKind.HEATING.value,
+            0x02,
+            self.nounce_repository.next_outbound_nounce(DeviceKind.HEATING.value)
+        )
         self.radio.send(message)
         time.sleep(0.7)
         self.radio.send(message)

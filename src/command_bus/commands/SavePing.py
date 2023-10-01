@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from devices import get_device_for_kind
-from persistence import DevicePingRepository, DeviceStatusRepository
+from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository
 from domain_types import DeviceKind
 from ui import DevicePingReceived
 from .EvaluateDevice import EvaluateDevice
@@ -29,6 +29,7 @@ class SavePing(AbstractCommand):
             self.kind,
             ping_repository,
             DeviceStatusRepository(context.db_session),
+            NounceRepository(context.db_session),
             context.time_source,
             context.publisher,
             context.radio
