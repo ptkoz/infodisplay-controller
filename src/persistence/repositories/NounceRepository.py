@@ -25,7 +25,7 @@ class NounceRepository(AbstractRepository):
 
     def register_inbound_nounce(self, owner: int, value: int):
         """
-        Returns most recently recorded ping for given device kind
+        Returns most recently recorded nounce for given device kind
         """
         nounce = self.get_current_nounce(owner)
         nounce.inbound = value
@@ -34,7 +34,7 @@ class NounceRepository(AbstractRepository):
 
     def next_outbound_nounce(self, owner: int) -> int:
         """
-        Creates and records new ping object with given timestamp and device kind
+        Returns next nounce for outbound communication for given device
         """
         nounce = self.get_current_nounce(owner)
         nounce.outbound += 1
