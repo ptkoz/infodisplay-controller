@@ -13,7 +13,8 @@ class NounceRepository(AbstractRepository):
         """
         nounce = self._session.query(Nounce).filter(Nounce.owner == owner).first()
         if nounce is None:
-            nounce = Nounce(owner=int, inbound=0, outbound=0)
+            nounce = Nounce(owner=owner, inbound=0, outbound=0)
+            self._session.add(nounce)
 
         return nounce
 

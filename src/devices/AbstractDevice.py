@@ -54,7 +54,7 @@ class AbstractDevice(ABC):
         """
         last_status = self.device_status_repository.get_current_status(self.kind)
         if last_status is None or last_status == PowerStatus.TURNED_ON:
-            logging.warning("Assumed off status for device %#x", self.kind)
+            logging.warning("Assumed off status for device %s", self.kind.name)
             self.device_status_repository.set_current_status(self.kind, PowerStatus.TURNED_OFF, self.time_source.now())
             self.publisher.publish(DeviceStatusUpdate(self.kind, False))
 
@@ -102,7 +102,7 @@ class AbstractDevice(ABC):
         """
         if not self._can_turn_on():
             raise RuntimeError(
-                f"Turn ON device {self.kind:#x} while it is not available or in the grace period is not possible"
+                f"Turn ON device {self.kind.name:s} while it is not available or in the grace period is not possible"
             )
 
         self.device_status_repository.set_current_status(self.kind, PowerStatus.TURNED_ON, self.time_source.now())
@@ -114,7 +114,7 @@ class AbstractDevice(ABC):
         """
         if not self._can_turn_off():
             raise RuntimeError(
-                f"Turn OFF device {self.kind:#x} while it is not available or in the grace period is not possible"
+                f"Turn OFF device {self.kind.name:s} while it is not available or in the grace period is not possible"
             )
 
         self.device_status_repository.set_current_status(self.kind, PowerStatus.TURNED_OFF, self.time_source.now())

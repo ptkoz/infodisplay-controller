@@ -40,6 +40,7 @@ class RadioReceiver:
             msg = self.get_validated_message()
 
             if msg is not None:
+                self.handle_nounce_request(msg)
                 self.handle_ping(msg)
                 self.handle_indoor_measure(msg)
                 self.handle_outdoor_measure(msg)
@@ -48,7 +49,7 @@ class RadioReceiver:
         """
         Attempts to receive an inbound message from radio returns it only if it's valid
         """
-        msg = self.get_message()
+        msg = self.get_next_message()
 
         if msg is None:
             return None
@@ -62,6 +63,10 @@ class RadioReceiver:
             )
             return None
 
+        if msg.command == 0x00 and msg.is_valid(-1):
+            # This message is nounce request, don't validate against repetition
+            return msg
+
         nounce_repository = NounceRepository(self.db_session_factory())
         if not msg.is_valid(nounce_repository.get_last_inbound_nounce(msg.from_address)):
             logging.warning(
@@ -74,7 +79,7 @@ class RadioReceiver:
         nounce_repository.register_inbound_nounce(msg.from_address, msg.nounce)
         return msg
 
-    def get_message(self) -> Optional[InboundMessage]:
+    def get_next_message(self) -> Optional[InboundMessage]:
         """
         Attempts to receive an inbound message from radio
         """
@@ -95,6 +100,16 @@ class RadioReceiver:
             return None
 
         return msg
+
+    def handle_nounce_request(self, msg: InboundMessage) -> None:
+        """
+        Handle message, if it is a nounce request from device
+        """
+        if msg.command != 0x00:
+            return
+
+        from command_bus import RespondNounceRequest
+        self.command_bus.put_nowait(RespondNounceRequest(msg.from_address))
 
     def handle_ping(self, msg: InboundMessage) -> None:
         """
@@ -124,7 +139,7 @@ class RadioReceiver:
         """
         Handle message, if it is indoor measure
         """
-        if not msg.from_address in [MeasureKind.LIVING_ROOM.value, MeasureKind.BEDROOM.value] or msg.command != 0x01:
+        if msg.from_address not in [MeasureKind.LIVING_ROOM.value, MeasureKind.BEDROOM.value] or msg.command != 0x01:
             return
 
         if msg.extended_bytes_length != 12:
