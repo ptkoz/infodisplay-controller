@@ -204,7 +204,7 @@ class RadioController:
 
         [temperature, voltage] = unpack("<ff", msg.extended_bytes)
         measure = SensorMeasure(
-            self.time_source.now(), MeasureKind(msg.command), temperature, None, voltage
+            self.time_source.now(), MeasureKind(msg.from_address), temperature, None, voltage
         )
 
         from command_bus import SaveMeasure
