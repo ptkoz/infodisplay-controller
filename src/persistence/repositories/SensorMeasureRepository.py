@@ -15,7 +15,6 @@ class SensorMeasureRepository(AbstractRepository):
         Creates a new measurement record
         """
         self._session.add(measure)
-        self._session.commit()
         return measure
 
     def get_last_temperature(self, kind: MeasureKind, max_age: Optional[datetime] = None) -> Optional[SensorMeasure]:

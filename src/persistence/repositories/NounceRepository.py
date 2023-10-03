@@ -31,14 +31,11 @@ class NounceRepository(AbstractRepository):
         nounce = self.get_current_nounce(owner)
         nounce.inbound = value
 
-        self._session.commit()
-
     def next_outbound_nounce(self, owner: int) -> int:
         """
         Returns next nounce for outbound communication for given device
         """
         nounce = self.get_current_nounce(owner)
         nounce.outbound += 1
-        self._session.commit()
 
         return nounce.outbound

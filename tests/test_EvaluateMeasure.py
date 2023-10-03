@@ -2,13 +2,12 @@ import logging
 from datetime import datetime, timedelta
 from queue import Empty, Queue
 from unittest import TestCase
-from unittest.mock import call, Mock
+from unittest.mock import Mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from command_bus import EvaluateMeasure
 from command_bus.ExecutionContext import ExecutionContext
 from persistence import AbstractBase, DeviceControl, DevicePing, DeviceStatus, SensorMeasure, TargetTemperature
-from radio_bus import Radio
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 
 
@@ -29,16 +28,7 @@ class TestEvaluateMeasure(TestCase):
         AbstractBase.metadata.create_all(engine)
         logging.disable(logging.CRITICAL)
 
-        class StubRadio(Radio):
-            """
-            A stub radio implementation with mocked serial
-            """
-
-            # noinspection PyMissingConstructor
-            def __init__(self):  # pylint: disable=W0231
-                self.serial = Mock()
-
-        self.radio = StubRadio()
+        self.outbound_bus: Queue = Queue()
         self.mock_datetime = Mock()
         self.mock_datetime.now = Mock(return_value=self.NOW)
         self.session = Session(engine)
@@ -54,7 +44,7 @@ class TestEvaluateMeasure(TestCase):
         # noinspection PyTypeChecker
         self.context = ExecutionContext(
             self.session,
-            self.radio,
+            self.outbound_bus,
             Queue(),
             Mock(),
             self.mock_datetime,
@@ -102,7 +92,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW, MeasureKind.LIVING_ROOM, 27.0, 55.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
         self.assertEqual(
             1,
             self.session.query(DeviceStatus).count(),
@@ -136,7 +126,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW, MeasureKind.LIVING_ROOM, 27.0, 55.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
         logged_statuses = self.session.query(DeviceStatus).all()
         self.assertEqual(3, len(logged_statuses))
@@ -184,13 +174,9 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.6))
-
-        self.radio.serial.assert_has_calls(
-            [
-                call.write(self.TURN_OFF_BYTES),
-                call.write(self.TURN_OFF_BYTES),
-            ]
-        )
+        self.assertEqual(2, self.outbound_bus.qsize())
+        self.assertEqual(self.TURN_OFF_BYTES, self.outbound_bus.get_nowait().encoded_data)
+        self.assertEqual(self.TURN_OFF_BYTES, self.outbound_bus.get_nowait().encoded_data)
 
         logged_statuses = self.session.query(DeviceStatus).all()
         self.assertEqual(2, len(logged_statuses))
@@ -230,7 +216,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.8))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_no_turn_off_ac_in_grace_period(self):
         """
@@ -251,7 +237,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_no_turn_off_already_turned_off(self):
         """
@@ -279,7 +265,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_turn_on(self):
         """
@@ -300,12 +286,9 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=8, seconds=59), MeasureKind.LIVING_ROOM, 25.4))
-        self.radio.serial.assert_has_calls(
-            [
-                call.write(self.TURN_ON_BYTES),
-                call.write(self.TURN_ON_BYTES),
-            ]
-        )
+        self.assertEqual(2, self.outbound_bus.qsize())
+        self.assertEqual(self.TURN_ON_BYTES, self.outbound_bus.get_nowait().encoded_data)
+        self.assertEqual(self.TURN_ON_BYTES, self.outbound_bus.get_nowait().encoded_data)
 
         logged_statuses = self.session.query(DeviceStatus).all()
         self.assertEqual(2, len(logged_statuses))
@@ -345,7 +328,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 25.2))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_no_turn_on_ac_in_grace_period(self):
         """
@@ -366,7 +349,7 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 26.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_no_turn_on_already_turned_on(self):
         """
@@ -394,4 +377,4 @@ class TestEvaluateMeasure(TestCase):
         )
 
         self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 26.0))
-        self.radio.serial.write.assert_not_called()
+        self.assertEqual(0, self.outbound_bus.qsize())

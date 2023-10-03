@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Type
 from domain_types import DeviceKind, PowerStatus
 from persistence import DeviceStatusRepository, DevicePingRepository, NounceRepository
-from ui import Publisher, DeviceStatusUpdate
+from ui import UiPublisher, DeviceStatusUpdate
 
 
 class AbstractDevice(ABC):
@@ -29,7 +29,7 @@ class AbstractDevice(ABC):
         device_status_repository: DeviceStatusRepository,
         nounce_repository: NounceRepository,
         time_source: Type[datetime],
-        publisher: Publisher
+        publisher: UiPublisher
     ):
         self.kind = kind
         self.device_ping_repository = device_ping_repository

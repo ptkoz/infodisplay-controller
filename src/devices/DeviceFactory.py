@@ -1,9 +1,9 @@
 from datetime import datetime
+from queue import Queue
 from typing import Type
 from domain_types import DeviceKind
 from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository
-from radio_bus import Radio
-from ui import Publisher
+from ui import UiPublisher
 from .AbstractDevice import AbstractDevice
 from .AirConditioner import AirConditioner
 from .Heater import Heater
@@ -15,8 +15,8 @@ def get_device_for_kind(
     device_status_repository: DeviceStatusRepository,
     nounce_repository: NounceRepository,
     time_source: Type[datetime],
-    publisher: Publisher,
-    radio: Radio,
+    publisher: UiPublisher,
+    outbound_bus: Queue,
 ) -> AbstractDevice:
     """
     Returns device implementation for given kind
@@ -28,7 +28,7 @@ def get_device_for_kind(
             nounce_repository,
             time_source,
             publisher,
-            radio
+            outbound_bus
         )
     if kind == DeviceKind.HEATING:
         return Heater(
@@ -37,7 +37,7 @@ def get_device_for_kind(
             nounce_repository,
             time_source,
             publisher,
-            radio
+            outbound_bus
         )
 
     raise RuntimeError(f"Unknown device kind: {kind:#x}")

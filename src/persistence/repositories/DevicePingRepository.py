@@ -28,5 +28,4 @@ class DevicePingRepository(AbstractRepository):
         """
         ping = DevicePing(kind, timestamp)
         self._session.add(ping)
-        self._session.commit()
         return ping

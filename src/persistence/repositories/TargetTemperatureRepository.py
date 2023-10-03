@@ -19,7 +19,6 @@ class TargetTemperatureRepository(AbstractRepository):
         """
         target_temperature = self.get_target_temperature(device_kind, operating_mode)
         target_temperature.temperature_centi = round(temperature * 100)
-        self._session.commit()
 
         return target_temperature
 
@@ -44,7 +43,6 @@ class TargetTemperatureRepository(AbstractRepository):
             )
 
             self._session.add(target_temperature)
-            self._session.commit()
 
         return target_temperature
 

@@ -15,7 +15,6 @@ class DeviceStatusRepository(AbstractRepository):
         Logs device status
         """
         self._session.add(DeviceStatus(kind, timestamp, status))
-        self._session.commit()
 
     def get_current_status(self, kind: DeviceKind) -> PowerStatus:
         """

@@ -30,7 +30,7 @@ class RespondNounceRequest(AbstractCommand):
             outbound_nounce
         )
 
-        context.radio.send(
+        context.outbound_bus.put_nowait(
             OutboundMessage(
                 MY_ADDRESS,
                 self.respond_to,

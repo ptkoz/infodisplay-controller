@@ -22,7 +22,7 @@ class SavePing(AbstractCommand):
         """
         Execute the command
         """
-        logging.debug("Saving ping")
+        logging.debug("Saving ping from %s", self.kind.name)
 
         ping_repository = DevicePingRepository(context.db_session)
         device = get_device_for_kind(
@@ -32,7 +32,7 @@ class SavePing(AbstractCommand):
             NounceRepository(context.db_session),
             context.time_source,
             context.publisher,
-            context.radio
+            context.outbound_bus
         )
 
         was_previously_online = device.is_available()

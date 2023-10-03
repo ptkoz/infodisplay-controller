@@ -8,7 +8,7 @@ import websockets.server
 from websockets.legacy.protocol import broadcast, WebSocketCommonProtocol
 
 
-class Controller:
+class UiController:
     """
     Controls communication with the UI
     """

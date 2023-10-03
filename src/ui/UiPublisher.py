@@ -1,7 +1,7 @@
 from typing_extensions import Protocol
 
 
-class Publisher(Protocol):
+class UiPublisher(Protocol):
     """
     Interface for publishing messages to ui clients
     """

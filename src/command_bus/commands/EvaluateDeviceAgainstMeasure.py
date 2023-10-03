@@ -29,7 +29,7 @@ class EvaluateDeviceAgainstMeasure(AbstractCommand):
             NounceRepository(context.db_session),
             context.time_source,
             context.publisher,
-            context.radio
+            context.outbound_bus
         )
 
         if not device.is_available():

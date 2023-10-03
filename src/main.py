@@ -8,8 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from command_bus import CommandExecutor
 from persistence import AbstractBase
-from radio_bus import Radio, RadioReceiver
-from ui import Controller
+from radio_bus import Radio, RadioController
+from ui import UiController
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -22,6 +22,7 @@ logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
 
 stop = threading.Event()
 command_bus: Queue = Queue()
+outbound_bus: Queue = Queue()
 radio = Radio("/dev/ttyS0", 17)
 db_engine = create_engine("sqlite:////var/lib/infodisplay/database.db")
 db_session_factory = sessionmaker(db_engine)
@@ -29,17 +30,17 @@ db_session_factory = sessionmaker(db_engine)
 radio.setup_device()
 AbstractBase.metadata.create_all(db_engine)
 
-controller = Controller(8010, command_bus, stop)
-receiver = RadioReceiver(radio, command_bus, datetime, stop, db_session_factory)
-executor = CommandExecutor(db_session_factory, radio, command_bus, controller, datetime, stop)
+ui_controller = UiController(8010, command_bus, stop)
+radio_controller = RadioController(radio, outbound_bus, command_bus, datetime, stop, db_session_factory)
+executor = CommandExecutor(db_session_factory, outbound_bus, command_bus, ui_controller, datetime, stop)
 
-receiving_thread = threading.Thread(target=receiver.run)
-executor_thread = threading.Thread(target=executor.run)
-controller_thread = threading.Thread(target=controller.run)
+radio_thread = threading.Thread(target=radio_controller.run)
+command_thread = threading.Thread(target=executor.run)
+ui_thread = threading.Thread(target=ui_controller.run)
 
-receiving_thread.start()
-executor_thread.start()
-controller_thread.start()
+radio_thread.start()
+command_thread.start()
+ui_thread.start()
 
 
 # pylint: disable=W0613
@@ -54,6 +55,6 @@ def sig_handler(signum, frame):
 signal.signal(signal.SIGTERM, sig_handler)
 signal.signal(signal.SIGINT, sig_handler)
 
-receiving_thread.join()
-executor_thread.join()
-controller_thread.join()
+radio_thread.join()
+command_thread.join()
+ui_thread.join()

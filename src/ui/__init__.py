@@ -1,5 +1,5 @@
-from .Controller import Controller
-from .Publisher import Publisher
+from .UiController import UiController
+from .UiPublisher import UiPublisher
 from .messages.TemperatureUpdate import TemperatureUpdate
 from .messages.TargetTemperatureUpdate import TargetTemperatureUpdate
 from .messages.HumidityUpdate import HumidityUpdate

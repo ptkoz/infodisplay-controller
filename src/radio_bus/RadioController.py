@@ -1,6 +1,7 @@
 import logging
+import traceback
 from datetime import datetime
-from queue import Queue
+from queue import Empty, Queue
 from struct import unpack
 from threading import Event
 from typing import Optional, Type
@@ -9,11 +10,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from domain_types import DeviceKind, MeasureKind
 from persistence import NounceRepository, SensorMeasure
 from .radio.InboundMessage import InboundMessage
+from .radio.OutboundMessage import OutboundMessage
 from .radio.Radio import Radio
 from .radio.MessageStartMarker import MESSAGE_START_MARKER
 
 
-class RadioReceiver:
+class RadioController:
     """
     Class that is responsible for receiving and interpreting data through radio.
     """
@@ -21,12 +23,14 @@ class RadioReceiver:
     def __init__(
         self,
         radio: Radio,
+        outbound_bus: Queue,
         command_bus: Queue,
         time_source: Type[datetime],
         stop: Event,
         db_session_factory: sessionmaker[Session]  # pylint: disable=E1136
     ):
         self.radio = radio
+        self.outbound_bus = outbound_bus
         self.command_bus = command_bus
         self.time_source = time_source
         self.stop = stop
@@ -37,13 +41,22 @@ class RadioReceiver:
         Run the receiving process. This is meant to be run in a separate thread, as it's blocking
         """
         while not self.stop.is_set():
-            msg = self.get_validated_message()
+            try:
+                inbound = self.get_validated_message()
+                if inbound is not None:
+                    self.handle_nounce_request(inbound)
+                    self.handle_ping(inbound)
+                    self.handle_indoor_measure(inbound)
+                    self.handle_outdoor_measure(inbound)
 
-            if msg is not None:
-                self.handle_nounce_request(msg)
-                self.handle_ping(msg)
-                self.handle_indoor_measure(msg)
-                self.handle_outdoor_measure(msg)
+                outbound = self.outbound_bus.get(timeout=3)
+                if isinstance(outbound, OutboundMessage):
+                    self.radio.send(outbound)
+                    self.outbound_bus.task_done()
+            except Empty:
+                continue
+            except Exception:
+                logging.error(traceback.format_exc())
 
     def get_validated_message(self) -> Optional[InboundMessage]:
         """
@@ -67,33 +80,44 @@ class RadioReceiver:
             # This message is nounce request, don't validate against repetition
             return msg
 
-        nounce_repository = NounceRepository(self.db_session_factory())
-        if not msg.is_valid(nounce_repository.get_last_inbound_nounce(msg.from_address)):
-            logging.warning(
-                "Received message %#x from %#x, but it could not be authenticated",
-                msg.command,
-                msg.from_address
-            )
-            return None
+        with self.db_session_factory() as db_session:
+            nounce_repository = NounceRepository(db_session)
+            if not msg.is_valid(nounce_repository.get_last_inbound_nounce(msg.from_address)):
+                logging.warning(
+                    "Received message %#x from %#x, but it could not be authenticated",
+                    msg.command,
+                    msg.from_address
+                )
+                return None
 
-        nounce_repository.register_inbound_nounce(msg.from_address, msg.nounce)
+            nounce_repository.register_inbound_nounce(msg.from_address, msg.nounce)
+            db_session.commit()
         return msg
 
     def get_next_message(self) -> Optional[InboundMessage]:
         """
         Attempts to receive an inbound message from radio
         """
-        self.radio.serial.timeout = 5
-        if self.radio.serial.read(1) != MESSAGE_START_MARKER:
-            # skip everything and wait for message beginning
-            return None
+        self.radio.serial.timeout = 1
+        while True:
+            marker = self.radio.serial.read(1)
 
-        [size] = self.radio.serial.read(1)
-        if size is None:
+            if len(marker) == 0:
+                # timeout waiting for marker
+                return None
+
+            if marker == MESSAGE_START_MARKER:
+                # start marker received, continue
+                break
+
+        self.radio.serial.timeout = 5
+        size = self.radio.serial.read(1)
+        if len(size) != 1:
             logging.warning("Message start received, but then timed out on waiting for message size")
             # timeout on reading the message length
             return None
 
+        size = int.from_bytes(size, byteorder="little", signed=False)
         msg = InboundMessage.receive_from_radio(self.radio, size)
         if msg is None:
             logging.warning("Unable to read message of size %d from radio", size)

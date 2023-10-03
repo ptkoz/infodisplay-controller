@@ -1,11 +1,11 @@
-import time
 from datetime import datetime
+from queue import Queue
 from typing import Type
 from secrets import MY_ADDRESS
 from domain_types import DeviceKind
 from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository
-from radio_bus import OutboundMessage, Radio
-from ui import Publisher
+from radio_bus import OutboundMessage
+from ui import UiPublisher
 from .AbstractDevice import AbstractDevice
 
 
@@ -20,8 +20,8 @@ class Heater(AbstractDevice):
         device_status_repository: DeviceStatusRepository,
         nounce_repository: NounceRepository,
         time_source: Type[datetime],
-        publisher: Publisher,
-        radio: Radio,
+        publisher: UiPublisher,
+        outbound_bus: Queue,
     ):
         super().__init__(
             DeviceKind.HEATING,
@@ -31,7 +31,7 @@ class Heater(AbstractDevice):
             time_source,
             publisher
         )
-        self.radio = radio
+        self.outbound_bus = outbound_bus
 
     def can_cool_down(self) -> bool:
         """
@@ -81,9 +81,8 @@ class Heater(AbstractDevice):
             0x01,
             self.nounce_repository.next_outbound_nounce(DeviceKind.HEATING.value)
         )
-        self.radio.send(message)
-        time.sleep(0.7)
-        self.radio.send(message)
+        self.outbound_bus.put_nowait(message)
+        self.outbound_bus.put_nowait(message)
 
     def __turn_off(self) -> None:
         """
@@ -97,6 +96,5 @@ class Heater(AbstractDevice):
             0x02,
             self.nounce_repository.next_outbound_nounce(DeviceKind.HEATING.value)
         )
-        self.radio.send(message)
-        time.sleep(0.7)
-        self.radio.send(message)
+        self.outbound_bus.put_nowait(message)
+        self.outbound_bus.put_nowait(message)
