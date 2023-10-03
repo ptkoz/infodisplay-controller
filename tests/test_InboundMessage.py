@@ -12,7 +12,9 @@ class TestInboundMessage(TestCase):
         """
         Tests whether message with incorrect data is handled as expected
         """
-        message = InboundMessage(b'\x88\x08\x8e')
+        message = InboundMessage(
+            b'\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f\x8c\x8f'
+        )
         self.assertEqual(0, message.from_address)
         self.assertEqual(0, message.to_address)
         self.assertEqual(0, message.command)

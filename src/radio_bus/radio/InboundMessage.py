@@ -37,7 +37,7 @@ class InboundMessage:
         self.extended_bytes: bytes
         self.extended_bytes_length: int
 
-        if len(data) >= 23:
+        if len(result) >= 23:
             blake = blake2s(key=HMAC_KEY, digest_size=16)
             blake.update(result[16:])
 
