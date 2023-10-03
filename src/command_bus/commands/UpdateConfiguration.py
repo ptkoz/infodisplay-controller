@@ -1,3 +1,5 @@
+import logging
+
 from persistence import TargetTemperatureRepository, DeviceControlRepository
 from domain_types import DeviceKind, MeasureKind, OperatingMode
 from ui import TargetTemperatureUpdate, DeviceControlUpdate
@@ -30,6 +32,12 @@ class UpdateConfiguration(AbstractCommand):
                         self.data["targetTemperature"][device_key][mode_key]
                     )
 
+                    logging.debug(
+                        "Target %s temperature in %s set to %f",
+                        device_kind.name,
+                        operating_mode.name,
+                        target_temperature.temperature
+                    )
                     context.publisher.publish(TargetTemperatureUpdate(target_temperature))
 
         device_control_repository = DeviceControlRepository(context.db_session)
@@ -38,10 +46,18 @@ class UpdateConfiguration(AbstractCommand):
                 device_kind = DeviceKind(int(device_key))
                 for mode_key in self.data["controlMeasures"][device_key]:
                     operating_mode = OperatingMode(mode_key)
+                    controlling_measures = [MeasureKind(i) for i in self.data["controlMeasures"][device_key][mode_key]]
                     device_control_repository.set_controlling_measures(
                         device_kind,
                         operating_mode,
-                        [MeasureKind(i) for i in self.data["controlMeasures"][device_key][mode_key]]
+                        controlling_measures
+                    )
+
+                    logging.debug(
+                        "Device %s at %s is now controlled by %d measures",
+                        device_kind.name,
+                        operating_mode.name,
+                        len(controlling_measures)
                     )
 
                 context.publisher.publish(
