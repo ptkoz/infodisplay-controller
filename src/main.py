@@ -25,7 +25,7 @@ command_bus: Queue = Queue()
 outbound_bus: Queue = Queue()
 radio = Radio("/dev/ttyS0", 17)
 db_engine = create_engine("sqlite:////var/lib/infodisplay/database.db")
-db_session_factory = sessionmaker(db_engine)
+db_session_factory = sessionmaker(db_engine, expire_on_commit=False)
 
 radio.setup_device()
 AbstractBase.metadata.create_all(db_engine)
