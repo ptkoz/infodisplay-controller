@@ -23,7 +23,7 @@ class RespondNounceRequest(AbstractCommand):
         outbound_nounce = nounce_repository.next_outbound_nounce(self.respond_to)
         last_inbound_nounce = nounce_repository.get_last_inbound_nounce(self.respond_to)
 
-        logging.debug(
+        logging.info(
             "Responding to nounce request from %#x with inbound: %d, outbound: %d",
             self.respond_to,
             last_inbound_nounce,
