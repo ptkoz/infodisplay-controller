@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import traceback
 from queue import Queue
 from threading import Event
 from typing import List
@@ -30,17 +31,21 @@ class UiController:
         Handles a new listener joining the controller.
         """
         self.listeners.append(websocket)
-        logging.debug("New consumer joined, number of consumers %d", len(self.listeners))
+        logging.info("New consumer joined, number of consumers %d", len(self.listeners))
 
         from command_bus import InitializeDisplay
         self.command_bus.put_nowait(InitializeDisplay(websocket))
 
-        async for message in websocket:
-            from command_bus import UpdateConfiguration
-            self.command_bus.put_nowait(UpdateConfiguration(json.loads(message)))
+        try:
+            async for message in websocket:
+                from command_bus import UpdateConfiguration
+                self.command_bus.put_nowait(UpdateConfiguration(json.loads(message)))
+        except Exception:
+            logging.error(traceback.format_exc())
+            logging.error("Dropping consumer due to the error above")
 
         self.listeners.remove(websocket)
-        logging.debug("Consumer dropped, number of consumers %d", len(self.listeners))
+        logging.info("Consumer dropped, number of consumers %d", len(self.listeners))
 
     async def start_server(self):
         """
