@@ -6,3 +6,4 @@ from .messages.HumidityUpdate import HumidityUpdate
 from .messages.DevicePingReceived import DevicePingReceived
 from .messages.DeviceStatusUpdate import DeviceStatusUpdate
 from .messages.DeviceControlUpdate import DeviceControlUpdate
+from .messages.AwayStatusUpdate import AwayStatusUpdate

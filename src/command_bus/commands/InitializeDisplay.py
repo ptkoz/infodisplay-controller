@@ -2,13 +2,13 @@ import asyncio
 import json
 from websockets.legacy.protocol import WebSocketCommonProtocol
 from persistence import (
-    SensorMeasureRepository, DevicePingRepository, TargetTemperatureRepository, DeviceStatusRepository,
-    DeviceControlRepository,
+    AwayStatusRepository, SensorMeasureRepository, DevicePingRepository, TargetTemperatureRepository,
+    DeviceStatusRepository, DeviceControlRepository,
 )
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 from ui import (
     TemperatureUpdate, HumidityUpdate, DevicePingReceived, TargetTemperatureUpdate, DeviceStatusUpdate,
-    DeviceControlUpdate,
+    DeviceControlUpdate, AwayStatusUpdate
 )
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
@@ -26,11 +26,20 @@ class InitializeDisplay(AbstractCommand):
         """
         Send all the required data to the client.
         """
+        asyncio.run(self.send_away_status(context))
+
         for measure_kind in MeasureKind:
             asyncio.run(self.send_measure(measure_kind, context))
 
         for device_kind in DeviceKind:
             asyncio.run(self.send_device_status(device_kind, context))
+
+    async def send_away_status(self, context: ExecutionContext):
+        """
+        Send the away statis
+        """
+        away_status_repository = AwayStatusRepository(context.db_session)
+        await self.websocket.send(json.dumps(AwayStatusUpdate(away_status_repository.is_away())))
 
     async def send_measure(self, kind: MeasureKind, context: ExecutionContext):
         """
