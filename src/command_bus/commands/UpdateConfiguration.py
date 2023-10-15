@@ -1,8 +1,7 @@
 import logging
-
-from persistence import TargetTemperatureRepository, DeviceControlRepository
-from domain_types import DeviceKind, MeasureKind, OperatingMode
-from ui import TargetTemperatureUpdate, DeviceControlUpdate
+from persistence import AwayStatusRepository, TargetTemperatureRepository, DeviceControlRepository
+from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
+from ui import TargetTemperatureUpdate, DeviceControlUpdate, AwayStatusUpdate
 from .AbstractCommand import AbstractCommand
 from .EvaluateDevice import EvaluateDevice
 from ..ExecutionContext import ExecutionContext
@@ -20,6 +19,14 @@ class UpdateConfiguration(AbstractCommand):
         """
         Send all the required data to the client.
         """
+        away_status_repository = AwayStatusRepository(context.db_session)
+        if self.data["isAway"] is not None and self.data["isAway"] != away_status_repository.is_away():
+            away_status_repository.set_away_status(
+                context.time_source.now(),
+                PowerStatus.TURNED_ON if self.data["isAway"] else PowerStatus.TURNED_OFF,
+            )
+            context.publisher.publish(AwayStatusUpdate(away_status_repository.is_away()))
+
         target_temperature_repository = TargetTemperatureRepository(context.db_session)
         if self.data["targetTemperature"] is not None:
             for device_key in self.data["targetTemperature"]:

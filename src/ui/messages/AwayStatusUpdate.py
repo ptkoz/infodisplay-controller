@@ -5,6 +5,6 @@ class AwayStatusUpdate(dict):
 
     def __init__(self, is_away: bool):
         super().__init__(
-            type="device/setAway",
+            type="device/updateAwayStatus",
             payload=is_away
         )
