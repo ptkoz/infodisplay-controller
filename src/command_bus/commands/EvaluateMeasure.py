@@ -1,6 +1,6 @@
-from persistence import SensorMeasure, DeviceControlRepository
+from persistence import SensorMeasure, TemperatureRegulationRepository
 from .AbstractCommand import AbstractCommand
-from .EvaluateDeviceAgainstMeasure import EvaluateDeviceAgainstMeasure
+from .RegulateTemperature import RegulateTemperature
 from ..ExecutionContext import ExecutionContext
 
 
@@ -16,10 +16,11 @@ class EvaluateMeasure(AbstractCommand):
         """
         Execute the command
         """
-        device_control_repository = DeviceControlRepository(context.db_session)
-        operating_mode = device_control_repository.get_mode_for(context.time_source.now())
-
-        for device_control in device_control_repository.get_devices_controlled_by(self.measure.kind, operating_mode):
+        regulations = (
+            TemperatureRegulationRepository(context.db_session)
+            .get_regulation_for_measure(self.measure.kind, context.time_source)
+        )
+        for (device_kind, target_temperature) in regulations:
             context.command_queue.put_nowait(
-                EvaluateDeviceAgainstMeasure(device_control.device_kind, operating_mode, self.measure)
+                RegulateTemperature(device_kind, self.measure, target_temperature)
             )

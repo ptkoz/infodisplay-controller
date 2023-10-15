@@ -1,22 +1,26 @@
 import logging
 from devices import get_device_for_kind
-from domain_types import DeviceKind, OperatingMode
-from persistence import (
-    DevicePingRepository, DeviceStatusRepository, NounceRepository, SensorMeasure, TargetTemperatureRepository,
-)
+from domain_types import DeviceKind
+from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository, SensorMeasure
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
 
-class EvaluateDeviceAgainstMeasure(AbstractCommand):
+class RegulateTemperature(AbstractCommand):
     """
     Given the device and measure, determines whether device should be turned on/off
     """
+    __BOUNDARY: float = 0.3
 
-    def __init__(self, device_kind: DeviceKind, operating_mode: OperatingMode, measure: SensorMeasure):
+    def __init__(
+        self,
+        device_kind: DeviceKind,
+        measure: SensorMeasure,
+        target_temperature: float
+    ):
         self.device_kind = device_kind
-        self.operating_mode = operating_mode
         self.measure = measure
+        self.target_temperature = target_temperature
 
     def execute(self, context: ExecutionContext) -> None:
         """
@@ -42,16 +46,15 @@ class EvaluateDeviceAgainstMeasure(AbstractCommand):
             device.assume_off_status()
             return
 
-        logging.debug("Evaluating device %s against %s", self.device_kind.name, self.measure.kind.name)
-
-        target = TargetTemperatureRepository(context.db_session).get_target_temperature(
-            self.device_kind,
-            self.operating_mode
+        logging.debug(
+            'Evaluating device %s against %s, current t: %.2f, target t: %.2f',
+            self.device_kind.name,
+            self.measure.kind.name,
+            self.measure.temperature,
+            self.target_temperature
         )
 
-        logging.debug('Current t: %.2f, target t: %.2f', self.measure.temperature, target.temperature)
-
-        if target.is_temperature_above_range(self.measure.temperature) and device.can_cool_down():
+        if self.is_measure_above_target_range(self.measure, self.target_temperature) and device.can_cool_down():
             # device should start cooling down
             if device.is_in_cooling_grace_period():
                 # to do: schedule cooling down at first possible moment
@@ -65,7 +68,7 @@ class EvaluateDeviceAgainstMeasure(AbstractCommand):
             device.start_cool_down()
             logging.info('Device %s started COOLING DOWN', self.device_kind.name)
 
-        if target.is_temperature_below_range(self.measure.temperature) and device.can_warm_up():
+        if self.is_measure_below_target_range(self.measure, self.target_temperature) and device.can_warm_up():
             # device should start warming up
             if device.is_in_warming_grace_period():
                 # to do: schedule warming up at first possible moment
@@ -77,3 +80,15 @@ class EvaluateDeviceAgainstMeasure(AbstractCommand):
 
             device.start_warm_up()
             logging.info('Device %s started WARMING UP', self.device_kind.name)
+
+    def is_measure_above_target_range(self, measure: SensorMeasure, target_temperature: float) -> bool:
+        """
+        Checks if given temperature is higher than the threshold that enables AC
+        """
+        return measure.temperature > target_temperature + self.__BOUNDARY
+
+    def is_measure_below_target_range(self, measure: SensorMeasure, target_temperature: float) -> bool:
+        """
+        Checks if given temperature is lower than the threshold that disables AC
+        """
+        return measure.temperature < target_temperature - self.__BOUNDARY

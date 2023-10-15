@@ -1,9 +1,8 @@
 from datetime import timedelta
-
 from domain_types import DeviceKind
-from persistence import DeviceControlRepository, SensorMeasureRepository
+from persistence import TemperatureRegulationRepository, SensorMeasureRepository
 from .AbstractCommand import AbstractCommand
-from .EvaluateDeviceAgainstMeasure import EvaluateDeviceAgainstMeasure
+from .RegulateTemperature import RegulateTemperature
 from ..ExecutionContext import ExecutionContext
 
 
@@ -20,16 +19,17 @@ class EvaluateDevice(AbstractCommand):
         Execute the command
         """
         measure_repository = SensorMeasureRepository(context.db_session)
-        device_control_repository = DeviceControlRepository(context.db_session)
-        operating_mode = device_control_repository.get_mode_for(context.time_source.now())
-
-        for device_control in device_control_repository.get_measures_controlling(self.kind, operating_mode):
+        regulations = (
+            TemperatureRegulationRepository(context.db_session)
+            .get_regulation_for_device(self.kind, context.time_source)
+        )
+        for (measure_kind, target_temperature) in regulations:
             measure = measure_repository.get_last_temperature(
-                device_control.measure_kind,
+                measure_kind,
                 context.time_source.now() - timedelta(minutes=10)
             )
 
             if measure is not None:
                 context.command_queue.put_nowait(
-                    EvaluateDeviceAgainstMeasure(self.kind, operating_mode, measure)
+                    RegulateTemperature(self.kind, measure, target_temperature)
                 )
