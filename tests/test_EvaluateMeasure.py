@@ -309,6 +309,29 @@ class TestEvaluateMeasure(TestCase):
             logged_statuses[1]
         )
 
+    def test_no_turn_on_measure_from_other_sensor_lower(self):
+        """
+        AC should be turned on
+        """
+        self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.BEDROOM, OperatingMode.DAY))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5, seconds=1), MeasureKind.BEDROOM, 25.3))
+        self.session.add(
+            DeviceStatus(
+                DeviceKind.COOLING,
+                self.NOW - timedelta(minutes=5, seconds=1),
+                PowerStatus.TURNED_OFF
+            )
+        )
+        self.session.add(
+            DevicePing(
+                DeviceKind.COOLING,
+                self.NOW - timedelta(minutes=2, seconds=59)
+            )
+        )
+
+        self.execute(SensorMeasure(self.NOW - timedelta(minutes=8, seconds=59), MeasureKind.LIVING_ROOM, 25.4))
+        self.assertEqual(0, self.outbound_bus.qsize())
+
     def test_no_turn_on_temperature_in_range(self):
         """
         AC should not be turned on because temperature hasn't met threshold yet
