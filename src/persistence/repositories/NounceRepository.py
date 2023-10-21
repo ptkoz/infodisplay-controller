@@ -7,7 +7,7 @@ class NounceRepository(AbstractRepository):
     Repository for air conditioner pings
     """
 
-    def get_current_nounce(self, owner: int) -> Nounce:
+    def get_nounce(self, owner: int) -> Nounce:
         """
         Returns current nounce for given device
         """
@@ -22,20 +22,20 @@ class NounceRepository(AbstractRepository):
         """
         Returns most recently recorded inbound nounce
         """
-        return self.get_current_nounce(owner).inbound
+        return self.get_nounce(owner).inbound
 
     def register_inbound_nounce(self, owner: int, value: int):
         """
         Returns most recently recorded nounce for given device kind
         """
-        nounce = self.get_current_nounce(owner)
+        nounce = self.get_nounce(owner)
         nounce.inbound = value
 
     def next_outbound_nounce(self, owner: int) -> int:
         """
         Returns next nounce for outbound communication for given device
         """
-        nounce = self.get_current_nounce(owner)
+        nounce = self.get_nounce(owner)
         nounce.outbound += 1
 
         return nounce.outbound

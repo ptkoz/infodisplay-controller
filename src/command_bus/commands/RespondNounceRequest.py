@@ -1,7 +1,7 @@
 import logging
 from struct import pack
 from secrets import MY_ADDRESS
-from persistence import NounceRepository
+from persistence import NounceRepository, NounceRequestResponseRepository
 from radio_bus import OutboundMessage
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
@@ -38,4 +38,12 @@ class RespondNounceRequest(AbstractCommand):
                 outbound_nounce,
                 pack("<L", last_inbound_nounce)
             )
+        )
+
+        nounce_request_response_repository = NounceRequestResponseRepository(context.db_session)
+        nounce_request_response_repository.register(
+            self.respond_to,
+            context.time_source.now(),
+            last_inbound_nounce,
+            outbound_nounce
         )

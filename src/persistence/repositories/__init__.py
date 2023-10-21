@@ -6,3 +6,4 @@ from .DeviceControlRepository import DeviceControlRepository
 from .NounceRepository import NounceRepository
 from .AwayStatusRepository import AwayStatusRepository
 from .TemperatureRegulationRepository import TemperatureRegulationRepository
+from .NounceRequestResponseRepository import NounceRequestResponseRepository
