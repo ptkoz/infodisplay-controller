@@ -159,6 +159,9 @@ class RadioController:
         from command_bus import SavePing
         self.command_bus.put_nowait(SavePing(device_kind, self.time_source.now()))
 
+        from command_bus import EvaluateDevice
+        self.command_bus.put_nowait(EvaluateDevice(device_kind))
+
     def handle_indoor_measure(self, msg: InboundMessage) -> None:
         """
         Handle message, if it is indoor measure

@@ -1,5 +1,6 @@
 from .CommandExecutor import CommandExecutor
 from .commands.EvaluateMeasure import EvaluateMeasure
+from .commands.EvaluateDevice import EvaluateDevice
 from .commands.SaveMeasure import SaveMeasure
 from .commands.SavePing import SavePing
 from .commands.AbstractCommand import AbstractCommand

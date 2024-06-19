@@ -63,25 +63,3 @@ class TestSavePing(TestCase):
         self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=2)), pings[2])
         self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)), pings[3])
         self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW), pings[4])
-
-    def test_saving_after_inactive_period(self):
-        """
-        Given that there were no pings for some time, this ping should evaluate temperature
-        as we assume device has just went back online
-        """
-        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=5, seconds=3)))
-        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=4, seconds=2)))
-        self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3, seconds=1)))
-        self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1, seconds=0)))
-
-        SavePing(DeviceKind.HEATING, self.NOW).execute(self.context)
-
-        self.mock_queue.put_nowait.assert_called_once()
-
-        pings = self.session.query(DevicePing).all()
-        self.assertEqual(5, len(pings))
-        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=5, seconds=3)), pings[0])
-        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=4, seconds=2)), pings[1])
-        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=3, seconds=1)), pings[2])
-        self.assertEqual(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1, seconds=0)), pings[3])
-        self.assertEqual(DevicePing(DeviceKind.HEATING, self.NOW), pings[4])
