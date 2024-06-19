@@ -58,7 +58,7 @@ class DeviceControlRepository(AbstractRepository):
         """
         Returns the mode that is active at given time
         """
-        if 6 <= timestamp.hour < 23:
+        if 6 <= timestamp.hour < 22:
             return OperatingMode.DAY
 
         return OperatingMode.NIGHT
