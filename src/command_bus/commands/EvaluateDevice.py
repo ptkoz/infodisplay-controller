@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from typing import List, Tuple
 from domain_types import DeviceKind
@@ -24,6 +25,31 @@ class EvaluateDevice(AbstractCommand):
             TemperatureRegulationRepository(context.db_session)
             .get_regulation_for_device(self.kind, context.time_source)
         )
+
+        if len(regulations) == 0:
+            # This device is currently not regulated. Make sure it is switched off.
+            from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository
+            from devices import get_device_for_kind
+
+            device = get_device_for_kind(
+                self.kind,
+                DevicePingRepository(context.db_session),
+                DeviceStatusRepository(context.db_session),
+                NounceRepository(context.db_session),
+                context.time_source,
+                context.publisher,
+                context.outbound_bus
+            )
+
+            if device.is_turned_on():
+                logging.info("Device %s is ON, but it is unregulated - attempting TURN OFF", self.kind.name)
+                if device.can_turn_off():
+                    device.turn_off()
+                    logging.info('Device %s TURNED OFF successfully', self.kind.name)
+                else:
+                    logging.info('TURN OFF of device %s failed - device is in grace period', self.kind.name)
+
+            return
 
         measures: List[Tuple[SensorMeasure, float]] = []
         for (measure_kind, target_temperature) in regulations:

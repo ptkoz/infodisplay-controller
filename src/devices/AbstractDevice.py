@@ -58,19 +58,19 @@ class AbstractDevice(ABC):
             self.device_status_repository.set_current_status(self.kind, PowerStatus.TURNED_OFF, self.time_source.now())
             self.publisher.publish(DeviceStatusUpdate(self.kind, False))
 
-    def _is_turned_on(self) -> bool:
+    def is_turned_on(self) -> bool:
         """
         Checks if device is currently turned on
         """
         return self.device_status_repository.get_current_status(self.kind) == PowerStatus.TURNED_ON
 
-    def _is_turned_off(self) -> bool:
+    def is_turned_off(self) -> bool:
         """
         Checks if device is currently turned off
         """
         return self.device_status_repository.get_current_status(self.kind) == PowerStatus.TURNED_OFF
 
-    def _can_turn_on(self) -> bool:
+    def can_turn_on(self) -> bool:
         """
         Can we turn on? (prevents turning on when device is in the grace period after turn off)
         """
@@ -83,7 +83,7 @@ class AbstractDevice(ABC):
             (self.time_source.now() - last_turn_off.timestamp).total_seconds() > self.MIN_GRACE_PERIOD
         )
 
-    def _can_turn_off(self) -> bool:
+    def can_turn_off(self) -> bool:
         """
         Can we turn off? (prevents turning off when device is in the grace period after turn on)
         """
@@ -96,11 +96,23 @@ class AbstractDevice(ABC):
             (self.time_source.now() - last_turn_on.timestamp).total_seconds() > self.MIN_GRACE_PERIOD
         )
 
+    @abstractmethod
+    def turn_on(self) -> None:
+        """
+        Turns the device on
+        """
+
+    @abstractmethod
+    def turn_off(self) -> None:
+        """
+        Turns the device off
+        """
+
     def _register_turn_on(self) -> None:
         """
         Register that the device has been turned on
         """
-        if not self._can_turn_on():
+        if not self.can_turn_on():
             raise RuntimeError(
                 f"Turn ON device {self.kind.name:s} while it is not available or in the grace period is not possible"
             )
@@ -112,7 +124,7 @@ class AbstractDevice(ABC):
         """
         Register that the device has been turned off
         """
-        if not self._can_turn_off():
+        if not self.can_turn_off():
             raise RuntimeError(
                 f"Turn OFF device {self.kind.name:s} while it is not available or in the grace period is not possible"
             )

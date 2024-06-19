@@ -37,41 +37,41 @@ class Heater(AbstractDevice):
         """
         Checks whether the device is able to cool the temperature down, either by turning itself on or off
         """
-        return self._is_turned_on()
+        return self.is_turned_on()
 
     def is_in_cooling_grace_period(self) -> bool:
         """
         Checks whether device is currently in a grace period that prevents it from cooling down
         """
-        return not self._can_turn_off()
+        return not self.can_turn_off()
 
     def start_cool_down(self) -> None:
         """
         Tells the device to start the cool down process
         """
-        self.__turn_off()
+        self.turn_off()
 
     def can_warm_up(self) -> bool:
         """
         Checks whether the device is able to warm the temperature up, either by turning itself on or off
         """
-        return self._is_turned_off()
+        return self.is_turned_off()
 
     def is_in_warming_grace_period(self) -> bool:
         """
         Checks whether device is currently in a grace period that prevents it from warming up
         """
-        return not self._can_turn_on()
+        return not self.can_turn_on()
 
     def start_warm_up(self) -> None:
         """
         Tells device to start the warm-up process
         """
-        self.__turn_on()
+        self.turn_on()
 
-    def __turn_on(self) -> None:
+    def turn_on(self) -> None:
         """
-        Turns air conditioning on  and records turned on status
+        Turns heater on and records turned on status
         """
         self._register_turn_on()
 
@@ -84,9 +84,9 @@ class Heater(AbstractDevice):
         self.outbound_bus.put_nowait(message)
         self.outbound_bus.put_nowait(message)
 
-    def __turn_off(self) -> None:
+    def turn_off(self) -> None:
         """
-        Turns off the air conditioner and records turned off status
+        Turns off the heater and records turned off status
         """
         self._register_turn_off()
 
