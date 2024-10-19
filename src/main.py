@@ -23,7 +23,7 @@ logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
 stop = threading.Event()
 command_bus: Queue = Queue()
 outbound_bus: Queue = Queue()
-radio = Radio("/dev/ttyS0", 17)
+radio = Radio("/dev/serial0", 17)
 db_engine = create_engine("sqlite:////var/lib/infodisplay/database.db")
 db_session_factory = sessionmaker(db_engine, expire_on_commit=False)
 
