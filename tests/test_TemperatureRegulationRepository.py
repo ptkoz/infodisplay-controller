@@ -13,6 +13,8 @@ class TestTemperatureRegulationRepository(TestCase):
     """
     DAY = datetime(2023, 9, 13, 11, 35, 15)
     NIGHT = datetime(2023, 9, 13, 3, 0, 15)
+    FRIDAY_7AM = datetime(2024, 10, 18, 7, 0, 0)
+    SATURDAY_7AM = datetime(2024, 10, 19, 7, 0, 0)
 
     def setUp(self) -> None:
         engine = create_engine("sqlite://")
@@ -91,6 +93,14 @@ class TestTemperatureRegulationRepository(TestCase):
                 (DeviceKind.HEATING, 21.5)
             ]),
             (self.NIGHT, MeasureKind.BEDROOM, [
+                (DeviceKind.HEATING, 19)
+            ]),
+            # Friday 7am should be considered day
+            (self.FRIDAY_7AM, MeasureKind.BEDROOM, [
+                (DeviceKind.HEATING, 21.5)
+            ]),
+            # Saturday 7am should be considered night
+            (self.SATURDAY_7AM, MeasureKind.BEDROOM, [
                 (DeviceKind.HEATING, 19)
             ]),
         ]

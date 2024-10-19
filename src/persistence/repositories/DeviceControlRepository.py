@@ -58,7 +58,15 @@ class DeviceControlRepository(AbstractRepository):
         """
         Returns the mode that is active at given time
         """
-        if 6 <= timestamp.hour < 22:
+        day_start_hour = 6
+        day_end_hour = 22
+
+        if timestamp.weekday() >= 5:
+            # weekend
+            day_start_hour = 8
+            day_end_hour = 22
+
+        if day_start_hour <= timestamp.hour < day_end_hour:
             return OperatingMode.DAY
 
         return OperatingMode.NIGHT
