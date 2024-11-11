@@ -27,3 +27,23 @@ class SensorMeasureRepository(AbstractRepository):
             query = query.filter(SensorMeasure.timestamp > max_age)
 
         return query.order_by(SensorMeasure.timestamp.desc()).first()
+
+    def get_last_below(self, kind: MeasureKind, temperature: float):
+        """
+        Returns the last temperature below given value
+        """
+        return self._session.query(SensorMeasure).filter(
+            SensorMeasure.kind == kind
+        ).filter(
+            SensorMeasure.temperature < temperature
+        ).order_by(SensorMeasure.timestamp.desc()).first()
+
+    def get_last_above(self, kind: MeasureKind, temperature: float):
+        """
+        Returns the last temperature above given value
+        """
+        return self._session.query(SensorMeasure).filter(
+            SensorMeasure.kind == kind
+        ).filter(
+            SensorMeasure.temperature > temperature
+        ).order_by(SensorMeasure.timestamp.desc()).first()

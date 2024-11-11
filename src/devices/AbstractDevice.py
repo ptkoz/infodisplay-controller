@@ -133,7 +133,7 @@ class AbstractDevice(ABC):
         self.publisher.publish(DeviceStatusUpdate(self.kind, False))
 
     @abstractmethod
-    def can_cool_down(self) -> bool:
+    def can_start_cool_down(self) -> bool:
         """
         Checks whether the device is able to cool the temperature down, either by turning itself on or off
         """
@@ -151,7 +151,7 @@ class AbstractDevice(ABC):
         """
 
     @abstractmethod
-    def can_warm_up(self) -> bool:
+    def can_start_warm_up(self) -> bool:
         """
         Checks whether the device is able to warm the temperature up, either by turning itself on or off
         """

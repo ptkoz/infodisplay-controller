@@ -1,7 +1,11 @@
 import logging
+from datetime import timedelta
 from devices import get_device_for_kind
 from domain_types import DeviceKind
-from persistence import DevicePingRepository, DeviceStatusRepository, NounceRepository, SensorMeasure
+from persistence import (
+    DevicePingRepository, DeviceStatusRepository, NounceRepository, SensorMeasure,
+    SensorMeasureRepository,
+)
 from .AbstractCommand import AbstractCommand
 from ..ExecutionContext import ExecutionContext
 
@@ -10,7 +14,8 @@ class RegulateTemperature(AbstractCommand):
     """
     Given the device and measure, determines whether device should be turned on/off
     """
-    __BOUNDARY: float = 0.3
+    __TEMPERATURE_BOUNDARY: float = 0.3
+    __TARGET_POWER_SAVE_DELTA: int = 15
 
     def __init__(
         self,
@@ -54,7 +59,7 @@ class RegulateTemperature(AbstractCommand):
             self.target_temperature
         )
 
-        if self.is_measure_above_target_range(self.measure, self.target_temperature) and device.can_cool_down():
+        if self.should_start_cooling_down(context, device.can_start_cool_down(), device.is_turned_on()):
             # device should start cooling down
             if device.is_in_cooling_grace_period():
                 # to do: schedule cooling down at first possible moment
@@ -68,7 +73,7 @@ class RegulateTemperature(AbstractCommand):
             device.start_cool_down()
             logging.info('Device %s started COOLING DOWN', self.device_kind.name)
 
-        if self.is_measure_below_target_range(self.measure, self.target_temperature) and device.can_warm_up():
+        if self.should_start_warming_up(context, device.can_start_warm_up(), device.is_turned_on()):
             # device should start warming up
             if device.is_in_warming_grace_period():
                 # to do: schedule warming up at first possible moment
@@ -81,14 +86,44 @@ class RegulateTemperature(AbstractCommand):
             device.start_warm_up()
             logging.info('Device %s started WARMING UP', self.device_kind.name)
 
-    def is_measure_above_target_range(self, measure: SensorMeasure, target_temperature: float) -> bool:
+    def should_start_warming_up(self, context: ExecutionContext, can_start: bool, consider_power_save: bool) -> bool:
         """
-        Checks if given temperature is higher than the threshold that enables AC
+        Checks whether we should start warming up
         """
-        return measure.temperature > target_temperature + self.__BOUNDARY
+        if not can_start:
+            return False
 
-    def is_measure_below_target_range(self, measure: SensorMeasure, target_temperature: float) -> bool:
+        if self.measure.temperature <= self.target_temperature - self.__TEMPERATURE_BOUNDARY:
+            return True
+
+        if consider_power_save and self.measure.temperature <= self.target_temperature:
+            last_above = SensorMeasureRepository(context.db_session).get_last_above(
+                self.measure.kind,
+                self.target_temperature
+            )
+            last_must_be_older_than = context.time_source.now() - timedelta(minutes=self.__TARGET_POWER_SAVE_DELTA)
+            if last_above is not None and last_above.timestamp < last_must_be_older_than:
+                return True
+
+        return False
+
+    def should_start_cooling_down(self, context: ExecutionContext, can_start: bool, consider_power_save: bool) -> bool:
         """
-        Checks if given temperature is lower than the threshold that disables AC
+        Checks whether we should start cooling down
         """
-        return measure.temperature < target_temperature - self.__BOUNDARY
+        if not can_start:
+            return False
+
+        if self.measure.temperature >= self.target_temperature + self.__TEMPERATURE_BOUNDARY:
+            return True
+
+        if consider_power_save and self.measure.temperature >= self.target_temperature:
+            last_below = SensorMeasureRepository(context.db_session).get_last_below(
+                self.measure.kind,
+                self.target_temperature
+            )
+            last_must_be_older_than = context.time_source.now() - timedelta(minutes=self.__TARGET_POWER_SAVE_DELTA)
+            if last_below is not None and last_below.timestamp < last_must_be_older_than:
+                return True
+
+        return False

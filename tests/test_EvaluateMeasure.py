@@ -13,7 +13,7 @@ from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 
 class TestEvaluateMeasure(TestCase):
     """
-    Test case for air conditioning evaluation
+    Test case for measure evaluation
     """
     NOW = datetime(2023, 9, 13, 11, 35, 15)
     TURN_ON_BYTES = \
