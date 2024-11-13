@@ -14,7 +14,7 @@ class RegulateTemperature(AbstractCommand):
     """
     Given the device and measure, determines whether device should be turned on/off
     """
-    __TEMPERATURE_BOUNDARY: float = 0.3
+    __TEMPERATURE_BOUNDARY: float = 0.25
     __TARGET_POWER_SAVE_DELTA: int = 15
 
     def __init__(
