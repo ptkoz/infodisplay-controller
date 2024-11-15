@@ -1,7 +1,7 @@
 import logging
-from persistence import AwayStatusRepository, TargetTemperatureRepository, DeviceControlRepository
+from persistence import AwayStatusRepository, ThresholdTemperatureRepository, DeviceControlRepository
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
-from ui import TargetTemperatureUpdate, DeviceControlUpdate, AwayStatusUpdate
+from ui import ThresholdTemperatureUpdate, DeviceControlUpdate, AwayStatusUpdate
 from .AbstractCommand import AbstractCommand
 from .EvaluateDevice import EvaluateDevice
 from ..ExecutionContext import ExecutionContext
@@ -9,7 +9,7 @@ from ..ExecutionContext import ExecutionContext
 
 class UpdateConfiguration(AbstractCommand):
     """
-    A command that updates the control measures and target temperatures
+    A command that updates the control measures and threshold temperatures
     """
 
     def __init__(self, data: dict):
@@ -27,25 +27,25 @@ class UpdateConfiguration(AbstractCommand):
             )
             context.publisher.publish(AwayStatusUpdate(away_status_repository.is_away()))
 
-        target_temperature_repository = TargetTemperatureRepository(context.db_session)
-        if self.data["targetTemperature"] is not None:
-            for device_key in self.data["targetTemperature"]:
+        threshold_temperature_repository = ThresholdTemperatureRepository(context.db_session)
+        if self.data["thresholdTemperature"] is not None:
+            for device_key in self.data["thresholdTemperature"]:
                 device_kind = DeviceKind(int(device_key))
-                for mode_key in self.data["targetTemperature"][device_key]:
+                for mode_key in self.data["thresholdTemperature"][device_key]:
                     operating_mode = OperatingMode(mode_key)
-                    target_temperature = target_temperature_repository.set_target_temperature(
+                    threshold_temperature = threshold_temperature_repository.set_threshold_temperature(
                         device_kind,
                         operating_mode,
-                        self.data["targetTemperature"][device_key][mode_key]
+                        self.data["thresholdTemperature"][device_key][mode_key]
                     )
 
                     logging.debug(
-                        "Target %s temperature in %s set to %f",
+                        "Threshold %s temperature in %s set to %f",
                         device_kind.name,
                         operating_mode.name,
-                        target_temperature.temperature
+                        threshold_temperature.temperature
                     )
-                    context.publisher.publish(TargetTemperatureUpdate(target_temperature))
+                    context.publisher.publish(ThresholdTemperatureUpdate(threshold_temperature))
 
         device_control_repository = DeviceControlRepository(context.db_session)
         if self.data["controlMeasures"] is not None:

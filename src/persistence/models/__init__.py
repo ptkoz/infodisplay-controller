@@ -3,6 +3,6 @@ from .DeviceControl import DeviceControl
 from .DevicePing import DevicePing
 from .DeviceStatus import DeviceStatus
 from .SensorMeasure import SensorMeasure
-from .TargetTemperature import TargetTemperature
+from .ThresholdTemperature import ThresholdTemperature
 from .AwayStatus import AwayStatus
 from .NounceRequestResponseLog import NounceRequestResponseLog

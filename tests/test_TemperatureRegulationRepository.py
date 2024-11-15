@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
-from persistence import AbstractBase, AwayStatus, DeviceControl, TargetTemperature, TemperatureRegulationRepository
+from persistence import AbstractBase, AwayStatus, DeviceControl, ThresholdTemperature, TemperatureRegulationRepository
 
 
 class TestTemperatureRegulationRepository(TestCase):
@@ -65,9 +65,9 @@ class TestTemperatureRegulationRepository(TestCase):
         Setup test data in the database
         """
         # hence to target temperature for cooling at night, default should be used
-        self.session.add(TargetTemperature(DeviceKind.HEATING, OperatingMode.DAY, 2150))
-        self.session.add(TargetTemperature(DeviceKind.HEATING, OperatingMode.NIGHT, 1900))
-        self.session.add(TargetTemperature(DeviceKind.COOLING, OperatingMode.DAY, 2350))
+        self.session.add(ThresholdTemperature(DeviceKind.HEATING, OperatingMode.DAY, 2150))
+        self.session.add(ThresholdTemperature(DeviceKind.HEATING, OperatingMode.NIGHT, 1900))
+        self.session.add(ThresholdTemperature(DeviceKind.COOLING, OperatingMode.DAY, 2350))
 
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.NIGHT))

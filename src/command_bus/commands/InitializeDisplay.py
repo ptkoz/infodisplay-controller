@@ -2,12 +2,12 @@ import asyncio
 import json
 from websockets.legacy.protocol import WebSocketCommonProtocol
 from persistence import (
-    AwayStatusRepository, SensorMeasureRepository, DevicePingRepository, TargetTemperatureRepository,
+    AwayStatusRepository, SensorMeasureRepository, DevicePingRepository, ThresholdTemperatureRepository,
     DeviceStatusRepository, DeviceControlRepository,
 )
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 from ui import (
-    TemperatureUpdate, HumidityUpdate, DevicePingReceived, TargetTemperatureUpdate, DeviceStatusUpdate,
+    TemperatureUpdate, HumidityUpdate, DevicePingReceived, ThresholdTemperatureUpdate, DeviceStatusUpdate,
     DeviceControlUpdate, AwayStatusUpdate
 )
 from .AbstractCommand import AbstractCommand
@@ -76,11 +76,11 @@ class InitializeDisplay(AbstractCommand):
             )
         )
 
-        target_temperature_repository = TargetTemperatureRepository(context.db_session)
+        threshold_temperature_repository = ThresholdTemperatureRepository(context.db_session)
         for mode in OperatingMode:
             await self.websocket.send(
                 json.dumps(
-                    TargetTemperatureUpdate(target_temperature_repository.get_target_temperature(kind, mode))
+                    ThresholdTemperatureUpdate(threshold_temperature_repository.get_threshold_temperature(kind, mode))
                 )
             )
 

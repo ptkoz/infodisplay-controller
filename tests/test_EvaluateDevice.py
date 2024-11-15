@@ -9,7 +9,7 @@ from command_bus import EvaluateDevice
 from command_bus.ExecutionContext import ExecutionContext
 from persistence import (
     AbstractBase, DeviceControl, DevicePing, DeviceStatus, DeviceStatusRepository, SensorMeasure,
-    TargetTemperature,
+    ThresholdTemperature,
 )
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 
@@ -36,10 +36,10 @@ class TestEvaluateMeasure(TestCase):
         self.mock_datetime.now = Mock(return_value=self.NOW)
         self.session = Session(engine)
 
-        self.session.add(TargetTemperature(DeviceKind.COOLING, OperatingMode.DAY, 2500))
-        self.session.add(TargetTemperature(DeviceKind.COOLING, OperatingMode.NIGHT, 2000))
-        self.session.add(TargetTemperature(DeviceKind.HEATING, OperatingMode.DAY, 1900))
-        self.session.add(TargetTemperature(DeviceKind.HEATING, OperatingMode.NIGHT, 1800))
+        self.session.add(ThresholdTemperature(DeviceKind.COOLING, OperatingMode.DAY, 2500))
+        self.session.add(ThresholdTemperature(DeviceKind.COOLING, OperatingMode.NIGHT, 2000))
+        self.session.add(ThresholdTemperature(DeviceKind.HEATING, OperatingMode.DAY, 1900))
+        self.session.add(ThresholdTemperature(DeviceKind.HEATING, OperatingMode.NIGHT, 1800))
 
         # noinspection PyTypeChecker
         self.context = ExecutionContext(

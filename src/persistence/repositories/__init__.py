@@ -1,6 +1,6 @@
 from .DeviceStatusRepository import DeviceStatusRepository
 from .DevicePingRepository import DevicePingRepository
-from .TargetTemperatureRepository import TargetTemperatureRepository
+from .ThresholdTemperatureRepository import ThresholdTemperatureRepository
 from .SensorMeasureRepository import SensorMeasureRepository
 from .DeviceControlRepository import DeviceControlRepository
 from .NounceRepository import NounceRepository
