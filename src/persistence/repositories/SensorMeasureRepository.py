@@ -28,22 +28,22 @@ class SensorMeasureRepository(AbstractRepository):
 
         return query.order_by(SensorMeasure.timestamp.desc()).first()
 
-    def get_last_below(self, kind: MeasureKind, temperature: float):
+    def get_last_max(self, kind: MeasureKind, temperature: float):
         """
-        Returns the last temperature below given value
+        Checks when was the last time that temperature of given kind has been of given maximum value
         """
         return self._session.query(SensorMeasure).filter(
             SensorMeasure.kind == kind
         ).filter(
-            SensorMeasure.temperature < temperature
+            SensorMeasure.temperature <= temperature
         ).order_by(SensorMeasure.timestamp.desc()).first()
 
-    def get_last_above(self, kind: MeasureKind, temperature: float):
+    def get_last_min(self, kind: MeasureKind, temperature: float):
         """
-        Returns the last temperature above given value
+        Checks when was the last time that temperature of given kind has been of given minimum value
         """
         return self._session.query(SensorMeasure).filter(
             SensorMeasure.kind == kind
         ).filter(
-            SensorMeasure.temperature > temperature
+            SensorMeasure.temperature >= temperature
         ).order_by(SensorMeasure.timestamp.desc()).first()

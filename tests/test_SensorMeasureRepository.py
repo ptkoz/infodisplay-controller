@@ -93,36 +93,34 @@ class TestSensorMeasureRepository(TestCase):
         self.assertIsNone(self.repository.get_last_temperature(MeasureKind.BEDROOM, max_age))
         self.assertIsNone(self.repository.get_last_temperature(MeasureKind.OUTDOOR, max_age))
 
-    def test_fetching_last_above(self):
+    def test_fetching_last_min(self):
         """
-        Confirms it returns expected results when querying for last temperature above certain value
+        Confirms it returns expected results when querying for last temperature of given min value
         """
         base_time = datetime(2023, 9, 13, 11, 35, 15)
 
         self.session.add(SensorMeasure(base_time - timedelta(minutes=5), MeasureKind.OUTDOOR, 20.03))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=4), MeasureKind.OUTDOOR, 20.02))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=3), MeasureKind.OUTDOOR, 20.01))
-        self.session.add(SensorMeasure(base_time - timedelta(minutes=2), MeasureKind.OUTDOOR, 20.00))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=1), MeasureKind.OUTDOOR, 19.99))
 
         self.assertEqual(
             20.01,
-            self.repository.get_last_above(MeasureKind.OUTDOOR, 20.00).temperature
+            self.repository.get_last_min(MeasureKind.OUTDOOR, 20.00).temperature
         )
 
-    def test_fetching_last_below(self):
+    def test_fetching_last_max(self):
         """
-        Confirms it returns expected results when querying for last temperature above certain value
+        Confirms it returns expected results when querying for last temperature of given max value
         """
         base_time = datetime(2023, 9, 13, 11, 35, 15)
 
         self.session.add(SensorMeasure(base_time - timedelta(minutes=5), MeasureKind.OUTDOOR, 19.97))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=4), MeasureKind.OUTDOOR, 19.98))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=3), MeasureKind.OUTDOOR, 19.99))
-        self.session.add(SensorMeasure(base_time - timedelta(minutes=2), MeasureKind.OUTDOOR, 20.00))
         self.session.add(SensorMeasure(base_time - timedelta(minutes=1), MeasureKind.OUTDOOR, 20.01))
 
         self.assertEqual(
             19.99,
-            self.repository.get_last_below(MeasureKind.OUTDOOR, 20.00).temperature
+            self.repository.get_last_max(MeasureKind.OUTDOOR, 20.00).temperature
         )

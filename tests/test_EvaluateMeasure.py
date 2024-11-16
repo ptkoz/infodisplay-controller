@@ -173,7 +173,7 @@ class TestEvaluateMeasure(TestCase):
             )
         )
 
-        self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.6))
+        self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 24.49))
         self.assertEqual(2, self.outbound_bus.qsize())
         self.assertEqual(self.TURN_OFF_BYTES, self.outbound_bus.get_nowait().encoded_data)
         self.assertEqual(self.TURN_OFF_BYTES, self.outbound_bus.get_nowait().encoded_data)
@@ -350,7 +350,7 @@ class TestEvaluateMeasure(TestCase):
             )
         )
 
-        self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 25.2))
+        self.execute(SensorMeasure(self.NOW - timedelta(minutes=9, seconds=59), MeasureKind.LIVING_ROOM, 25.0))
         self.assertEqual(0, self.outbound_bus.qsize())
 
     def test_no_turn_on_ac_in_grace_period(self):

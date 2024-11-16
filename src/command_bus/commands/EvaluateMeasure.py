@@ -23,11 +23,11 @@ class EvaluateMeasure(AbstractCommand):
             .get_regulation_for_measure(self.measure.kind, context.time_source)
         )
 
-        for (device_kind, target_temperature) in regulations:
+        for (device_kind, threshold_temperature) in regulations:
             # If there are multiple measures controlling single device, only consider the one with the lowest reading
             if not self.has_lower_measure_from_other_sensors(context, device_kind):
                 context.command_queue.put_nowait(
-                    RegulateTemperature(device_kind, self.measure, target_temperature)
+                    RegulateTemperature(device_kind, self.measure, threshold_temperature)
                 )
 
     def has_lower_measure_from_other_sensors(self, context: ExecutionContext, device_kind: DeviceKind):

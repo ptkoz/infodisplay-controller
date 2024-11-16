@@ -7,29 +7,32 @@ class TestThresholdTemperature(TestCase):
     """
     Tests for target temperature class
     """
-    def test_cooling_target(self):
+    def test_cooling_threshold(self):
         """
-        Check whether conversion from centi to float works es expected
+        Test threshold for cooling device
         """
         temperature = ThresholdTemperature(DeviceKind.COOLING, OperatingMode.NIGHT, 2420)
         self.assertEqual(24.2, temperature.temperature)
         self.assertEqual(24.2, temperature.cool_down_threshold)
         self.assertEqual(23.7, temperature.warm_up_threshold)
+        self.assertEqual(23.95, temperature.power_save_threshold)
 
-    def test_heating_target(self):
+    def test_heating_threshold(self):
         """
-        Check whether conversion from centi to float works es expected
+        Test threshold for heating device
         """
         temperature = ThresholdTemperature(DeviceKind.HEATING, OperatingMode.NIGHT, 2420)
         self.assertEqual(24.2, temperature.temperature)
         self.assertEqual(24.2, temperature.warm_up_threshold)
         self.assertEqual(24.7, temperature.cool_down_threshold)
+        self.assertEqual(24.45, temperature.power_save_threshold)
 
-    def test_unknown_target(self):
+    def test_unknown_threshold(self):
         """
-        Check whether conversion from centi to float works es expected
+        Test threshold for unknown device
         """
         temperature = ThresholdTemperature(0x00, OperatingMode.NIGHT, 2420)
         self.assertEqual(24.2, temperature.temperature)
         self.assertEqual(23.95, temperature.warm_up_threshold)
         self.assertEqual(24.45, temperature.cool_down_threshold)
+        self.assertEqual(24.2, temperature.power_save_threshold)

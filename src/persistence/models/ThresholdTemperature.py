@@ -57,6 +57,23 @@ class ThresholdTemperature(AbstractBase):
                 return self.temperature + (self.__temperature_range / 2)
 
     @property
+    def power_save_threshold(self) -> float:
+        """
+        Returns threshold in which devices can be turned off (if it runs for prolonged period of time) to save power
+        even when warmup / cooldown threshold is not achieved.
+        """
+        match self.device_kind:
+            case DeviceKind.COOLING:
+                # Cooling power save threshold is half way through range below cooldown threshold
+                return self.temperature - (self.__temperature_range / 2)
+            case DeviceKind.HEATING:
+                # Heating power save threshold is half way through range above warmup threshold
+                return self.temperature + (self.__temperature_range / 2)
+            case _:
+                # Otherwise we consider the temp to be in the middle of the range
+                return self.temperature
+
+    @property
     def __temperature_range(self) -> float:
         """
         Returns the tolerance for the temperature

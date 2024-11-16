@@ -14,17 +14,11 @@ from persistence import (
 from domain_types import DeviceKind, MeasureKind, OperatingMode, PowerStatus
 
 
-class TestEvaluateMeasure(TestCase):
+class TestEvaluateDevice(TestCase):
     """
     Test case for device evaluation
     """
     NOW = datetime(2023, 9, 13, 11, 35, 15)
-    TURN_ON_BYTES = \
-        b'\xff"\x07~X\x88\r\x88\x04\x8b\x02\x8a\x04\x8e\x03\x8a\x07\x8e\r\x8c\x06\x8a\x0e\x89\n\x8d\n\x011' \
-        b'\x01\x00\x00\x00\x100\x01'
-
-    TURN_OFF_BYTES = \
-        b'\xff\x1a?y\x8b\x03rG\x8a\n\x89\n\x027>U7\x012w<\x01\x00\x00\x00\x100\x02'
 
     def setUp(self) -> None:
         engine = create_engine("sqlite://")
@@ -96,85 +90,114 @@ class TestEvaluateMeasure(TestCase):
         self.execute(DeviceKind.COOLING)
         self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.COOLING))
 
-    def test_regulated_device_is_turned_on(self) -> None:
+    def test_heating_device_is_turned_on(self) -> None:
         """
-        Confirms it turns on regulated device when temperature is below desired range (18.7 - 19.3)
+        Confirms it turns on regulated heating device when temperature is below configured threshold
         """
         self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.HEATING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_OFF))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 18.7))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 18.99))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.HEATING))
         self.execute(DeviceKind.HEATING)
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
 
-    def test_regulated_device_is_turned_off(self) -> None:
+    def test_heating_device_is_turned_off(self) -> None:
         """
-        Confirms it turns off regulated device when temperature is above desired range (18.7 - 19.3)
+        Confirms it turns off regulated heating device when temperature is above heating range (19.0 - 19.5)
         """
         self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.HEATING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.31))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.51))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
         self.execute(DeviceKind.HEATING)
         self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.HEATING))
 
-    def test_heating_remains_on_when_in_range_but_below_target(self) -> None:
+    def test_cooling_device_is_turned_on(self) -> None:
         """
-        Confirms it doesn't change heating status when it was turned on and temperature is IN desired range for
-        30 minutes, but below target temperature
+        Confirms it turns on regulated cooling device when temperature is above configured threshold
+        """
+        self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1)))
+        self.session.add(DeviceStatus(DeviceKind.COOLING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_OFF))
+        self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.LIVING_ROOM, OperatingMode.DAY))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.LIVING_ROOM, 25.01))
+        status_repository = DeviceStatusRepository(self.session)
+
+        self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.COOLING))
+        self.execute(DeviceKind.COOLING)
+        self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.COOLING))
+
+    def test_cooling_device_is_turned_off(self) -> None:
+        """
+        Confirms it turns off regulated cooling device when temperature is below cooling range (24.5 - 25.0)
+        """
+        self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1)))
+        self.session.add(DeviceStatus(DeviceKind.COOLING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
+        self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.LIVING_ROOM, OperatingMode.DAY))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.LIVING_ROOM, 24.49))
+        status_repository = DeviceStatusRepository(self.session)
+
+        self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.COOLING))
+        self.execute(DeviceKind.COOLING)
+        self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.COOLING))
+
+    def test_heating_remains_on_when_stays_long_in_range_but_below_power_save_threshold(self) -> None:
+        """
+        Confirms it doesn't change heating status when it was turned on and temperature remains in heating range for
+        30 minutes, but below power save threshold temperature
         """
         self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.HEATING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 18.53))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 18.85))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 18.86))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 18.87))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 18.9))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 18.99))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 19.25))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 19.25))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 19.25))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.25))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
         self.execute(DeviceKind.HEATING)
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
 
-    def test_cooling_remains_on_when_in_range_but_above_target(self) -> None:
+    def test_cooling_remains_on_when_stays_long_in_range_but_above_power_save_threshold(self) -> None:
         """
-        Confirms it doesn't change cooling status when it was turned on and temperature is IN desired range for
-        30 minutes, but above target temperature
+        Confirms it doesn't change cooling status when it was turned on and temperature remains in cooling range for
+        30 minutes, but above power save threshold temperature
         """
         self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.COOLING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 25.31))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 25.10))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 25.08))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 25.06))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 25.04))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 25.01))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 24.75))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 24.75))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 24.75))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 24.75))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.COOLING))
         self.execute(DeviceKind.COOLING)
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.COOLING))
 
-    def test_heating_is_turned_off_when_in_range_but_above_target_for_15minutes(self) -> None:
+    def test_heating_is_turned_off_when_stays_long_in_range_above_power_save_threshold(self) -> None:
         """
-        Confirms it turns off heating when temperature is above target temperature for at least 15 minutes.
+        Confirms it turns off heating when temperature is above power save threshold temperature for at least 15
+        minutes, even though the temperature is still in heating range
         """
         self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.HEATING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
 
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 18.69))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 19.85))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 19.07))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 19.08))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.1))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 18.99))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 19.26))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 19.27))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 19.28))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.29))
 
         status_repository = DeviceStatusRepository(self.session)
 
@@ -182,19 +205,20 @@ class TestEvaluateMeasure(TestCase):
         self.execute(DeviceKind.HEATING)
         self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.HEATING))
 
-    def test_cooling_is_turned_off_when_in_range_but_below_target_for_15minutes(self) -> None:
+    def test_cooling_is_turned_off_when_stays_long_in_range_below_power_save_threshold(self) -> None:
         """
-        Confirms it turns off heating when temperature is below target temperature for at least 15 minutes.
+        Confirms it turns off heating when temperature is below power save threshold temperature for at least 15
+        minutes, even though the temperature is still in cooling range
         """
         self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.COOLING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.BEDROOM, OperatingMode.DAY))
 
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 25.3))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 24.99))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 24.98))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 24.97))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 24.96))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 25.1))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 24.74))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 24.73))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 24.72))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 24.71))
 
         status_repository = DeviceStatusRepository(self.session)
 
@@ -202,40 +226,38 @@ class TestEvaluateMeasure(TestCase):
         self.execute(DeviceKind.COOLING)
         self.assertEqual(PowerStatus.TURNED_OFF, status_repository.get_current_status(DeviceKind.COOLING))
 
-
-    def test_heating_remains_on_when_above_target_for_less_than_15minutes(self) -> None:
+    def test_heating_remains_on_when_stays_long_in_range_and_above_power_save_threshold_but_not_enough(self) -> None:
         """
-        Confirms it doesn't change heating status when it was turned on and temperature is above target temperature
-        for less than 15 minutes
+        Confirms it doesn't change heating status when it was turned on and temperature remains in heating range for
+        15 minutes, but only 10 minutes above power save threshold temperature
         """
         self.session.add(DevicePing(DeviceKind.HEATING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.HEATING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.HEATING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 18.98))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 18.99))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 19.03))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 19.03))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.04))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 19.24))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 19.25))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 19.26))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 19.27))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 19.28))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
         self.execute(DeviceKind.HEATING)
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.HEATING))
 
-
-    def test_cooling_remains_on_when_below_target_for_less_than_15minutes(self) -> None:
+    def test_cooling_remains_on_when_stays_long_in_range_and_below_power_save_threshold_but_not_enough(self) -> None:
         """
-        Confirms it doesn't change cooling status when it was turned on and temperature is above target temperature
-        for less than 15 minutes
+        Confirms it doesn't change cooling status when it was turned on and temperature remains in cooling range for
+        15 minutes, but only 10 minutes below power save threshold temperature
         """
         self.session.add(DevicePing(DeviceKind.COOLING, self.NOW - timedelta(minutes=1)))
         self.session.add(DeviceStatus(DeviceKind.COOLING, self.NOW - timedelta(minutes=25), PowerStatus.TURNED_ON))
         self.session.add(DeviceControl(DeviceKind.COOLING, MeasureKind.BEDROOM, OperatingMode.DAY))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 25.02))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 25.03))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 24.99))
-        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 24.98))
-        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 24.97))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=20), MeasureKind.BEDROOM, 24.76))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=15), MeasureKind.BEDROOM, 24.75))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=10), MeasureKind.BEDROOM, 24.74))
+        self.session.add(SensorMeasure(self.NOW - timedelta(minutes=5), MeasureKind.BEDROOM, 24.73))
+        self.session.add(SensorMeasure(self.NOW, MeasureKind.BEDROOM, 24.72))
         status_repository = DeviceStatusRepository(self.session)
 
         self.assertEqual(PowerStatus.TURNED_ON, status_repository.get_current_status(DeviceKind.COOLING))

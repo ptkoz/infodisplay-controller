@@ -47,17 +47,26 @@ class TestTemperatureRegulationRepository(TestCase):
             self.time_source.now = Mock(return_value=now)
             self.assertListEqual(
                 [],
-                self.repository.get_regulation_for_measure(MeasureKind.OUTDOOR, self.time_source)
+                [
+                    (r[0], r[1].temperature) for r in
+                    self.repository.get_regulation_for_measure(MeasureKind.OUTDOOR, self.time_source)
+                ]
             )
 
             self.assertListEqual(
                 [(DeviceKind.HEATING, 15)],
-                self.repository.get_regulation_for_measure(MeasureKind.LIVING_ROOM, self.time_source)
+                [
+                    (r[0], r[1].temperature) for r in
+                    self.repository.get_regulation_for_measure(MeasureKind.LIVING_ROOM, self.time_source)
+                ]
             )
 
             self.assertListEqual(
                 [(DeviceKind.HEATING, 15)],
-                self.repository.get_regulation_for_measure(MeasureKind.BEDROOM, self.time_source)
+                [
+                    (r[0], r[1].temperature) for r in
+                    self.repository.get_regulation_for_measure(MeasureKind.BEDROOM, self.time_source)
+                ]
             )
 
     def setup_data(self):
@@ -112,7 +121,11 @@ class TestTemperatureRegulationRepository(TestCase):
         self.setup_data()
         for (now, measure, expected) in self.data_getting_for_measure():
             self.time_source.now = Mock(return_value=now)
-            self.assertListEqual(expected, self.repository.get_regulation_for_measure(measure, self.time_source))
+            regulations = self.repository.get_regulation_for_measure(measure, self.time_source)
+            self.assertListEqual(
+                expected,
+                [(r[0], r[1].temperature) for r in regulations]
+            )
 
     def data_getting_for_device(self):
         """
@@ -141,4 +154,8 @@ class TestTemperatureRegulationRepository(TestCase):
         self.setup_data()
         for (now, device, expected) in self.data_getting_for_device():
             self.time_source.now = Mock(return_value=now)
-            self.assertListEqual(expected, self.repository.get_regulation_for_device(device, self.time_source))
+            regulations = self.repository.get_regulation_for_device(device, self.time_source)
+            self.assertListEqual(
+                expected,
+                [(r[0], r[1].temperature) for r in regulations]
+            )
